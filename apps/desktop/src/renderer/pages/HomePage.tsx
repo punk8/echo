@@ -20,6 +20,7 @@ export function HomePage({
   const recent = history.slice(0, 4);
   const completedCount = history.filter((row) => row.status === "completed").length;
   const insertedCount = history.filter((row) => row.insertion_status === "inserted").length;
+  const command = getHomeCommandState(state);
 
   return (
     <section className="page-stack">
@@ -28,8 +29,8 @@ export function HomePage({
           <p className="eyebrow">Mac dictation</p>
           <h1>Press once to start, press again to finish.</h1>
         </div>
-        <button type="button" className="command-button" onClick={onToggle}>
-          {state.status === "recording" ? "Finish" : "Start"}
+        <button type="button" className="command-button" disabled={command.disabled} onClick={onToggle}>
+          {command.label}
         </button>
       </header>
 
@@ -72,6 +73,21 @@ export function HomePage({
       </section>
     </section>
   );
+}
+
+export function getHomeCommandState(state: DictationState) {
+  switch (state.status) {
+    case "recording":
+      return { label: "Finish", disabled: false };
+    case "finalizing":
+      return { label: "Finalizing", disabled: true };
+    case "processing":
+      return { label: "Processing", disabled: true };
+    case "inserting":
+      return { label: "Inserting", disabled: true };
+    default:
+      return { label: "Start", disabled: false };
+  }
 }
 
 function formatProviderDetail(providerStatus: ProviderStatus) {

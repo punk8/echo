@@ -293,6 +293,7 @@ The backend must validate high-risk outputs before responding:
 Home:
 
 - Show the main shortcut and copy: "Press once to start, press again to finish."
+- Disable the main Home command during finalizing, processing, and inserting so users cannot start or stop a second session while Echo is busy.
 - Show current provider status without exposing keys.
 - Show recent dictation status and local usage counters.
 

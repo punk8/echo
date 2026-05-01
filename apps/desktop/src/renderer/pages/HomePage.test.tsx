@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { HomePage } from "./HomePage";
+import { getHomeCommandState, HomePage } from "./HomePage";
 
 const settings = {
   historyRetention: "1_week" as const,
@@ -34,5 +34,28 @@ describe("HomePage", () => {
     expect(markup).toContain("LLM configuration missing");
     expect(markup).toContain("LLM_MODEL");
     expect(markup).not.toContain("LLM_API_KEY");
+  });
+
+  it("disables the command button while dictation is busy outside recording", () => {
+    const markup = renderToStaticMarkup(
+      <HomePage
+        state={{ status: "processing", sessionId: "session-1" }}
+        settings={settings}
+        history={[]}
+        providerStatus={{ reachable: true, apiBaseUrl: "http://127.0.0.1:43110" }}
+        onToggle={vi.fn()}
+      />
+    );
+
+    expect(getHomeCommandState({ status: "recording", sessionId: "session-1" })).toEqual({
+      label: "Finish",
+      disabled: false
+    });
+    expect(getHomeCommandState({ status: "processing", sessionId: "session-1" })).toEqual({
+      label: "Processing",
+      disabled: true
+    });
+    expect(markup).toContain("Processing");
+    expect(markup).toContain("disabled");
   });
 });
