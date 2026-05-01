@@ -65,6 +65,7 @@ function createDeps() {
       }),
       insertText: vi.fn().mockResolvedValue({ method: "clipboard_paste" as const, status: "inserted" as const }),
       copyText: vi.fn().mockResolvedValue({ method: "clipboard" as const, status: "copied" as const }),
+      playInteractionSound: vi.fn(),
       readLocalRecording: vi.fn().mockResolvedValue(Buffer.from("retry-audio")),
       deleteLocalRecording: vi.fn().mockResolvedValue(undefined),
       overlay: {
@@ -282,6 +283,28 @@ describe("createDictationSessionController", () => {
     expect(snapshot.state).toEqual({ status: "complete", sessionId: "session-1" });
   });
 
+  it("plays interaction sounds for recording start and successful completion when enabled", async () => {
+    const { deps } = createDeps();
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+    await controller.stopDictation();
+
+    expect(deps.playInteractionSound).toHaveBeenCalledWith("start");
+    expect(deps.playInteractionSound).toHaveBeenCalledWith("complete");
+  });
+
+  it("does not play interaction sounds when the setting is disabled", async () => {
+    const { deps } = createDeps();
+    deps.repositories.settings.getSettings.mockReturnValue({ ...defaultSettings, interactionSounds: false });
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+    await controller.stopDictation();
+
+    expect(deps.playInteractionSound).not.toHaveBeenCalled();
+  });
+
   it("records backend errors without inserting fabricated text", async () => {
     const { deps, historyRows } = createDeps();
     deps.backend.mockRejectedValueOnce(
@@ -318,6 +341,7 @@ describe("createDictationSessionController", () => {
       code: "server.asr_failed",
       message: "Speech recognition failed."
     });
+    expect(deps.playInteractionSound).toHaveBeenCalledWith("error");
   });
 
   it("passes raw transcript to error recovery when backend returns recoverable text", async () => {

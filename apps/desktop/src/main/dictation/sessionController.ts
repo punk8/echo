@@ -21,6 +21,8 @@ export interface RecordedAudio {
   localPath: string | null;
 }
 
+export type InteractionSoundEvent = "start" | "complete" | "error";
+
 export interface DictationSessionControllerDeps {
   createSessionId: () => string;
   now: () => string;
@@ -35,6 +37,7 @@ export interface DictationSessionControllerDeps {
   backend: (input: Omit<ProcessDictationInput, "apiBaseUrl" | "fetchImpl">) => Promise<DictationSuccessResponse>;
   insertText: (text: string) => Promise<InsertionResult>;
   copyText: (text: string) => Promise<InsertionResult>;
+  playInteractionSound?: (event: InteractionSoundEvent) => void;
   readLocalRecording: (localPath: string) => Promise<Buffer>;
   deleteLocalRecording: (localPath: string) => Promise<void>;
   overlay: {
@@ -177,6 +180,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
 
     state = applyDictationEvent(state, { type: "recording_started", sessionId });
     deps.overlay.showRecording({ sessionId, context });
+    maybePlayInteractionSound("start");
 
     return getAppState();
   }
@@ -233,6 +237,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
       } else {
         deps.overlay.showComplete({ sessionId: session.sessionId });
       }
+      maybePlayInteractionSound("complete");
       currentSession = undefined;
       return getAppState();
     } catch (error) {
@@ -246,6 +251,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
         message: backendError.message
       });
       deps.overlay.showError(buildErrorOverlayInput(session.sessionId, backendError, retryHistoryId));
+      maybePlayInteractionSound("error");
       currentSession = undefined;
       return getAppState();
     }
@@ -338,6 +344,12 @@ export function createDictationSessionController(deps: DictationSessionControlle
       throw new Error("dictation.no_active_session");
     }
     return currentSession;
+  }
+
+  function maybePlayInteractionSound(event: InteractionSoundEvent) {
+    if (deps.repositories.settings.getSettings().interactionSounds) {
+      deps.playInteractionSound?.(event);
+    }
   }
 
   function getDictionaryTerms(): DictionaryTerm[] {

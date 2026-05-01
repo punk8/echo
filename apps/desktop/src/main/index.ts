@@ -75,6 +75,7 @@ if (!gotLock) {
       backend: (input) => processDictation({ ...input, apiBaseUrl: runtime.apiBaseUrl }),
       insertText: insertTextWithAccessibilityFallback,
       copyText: copyTextToClipboard,
+      playInteractionSound: () => shell.beep(),
       readLocalRecording: readFile,
       deleteLocalRecording: (localPath) => rm(localPath, { force: true }),
       overlay: {

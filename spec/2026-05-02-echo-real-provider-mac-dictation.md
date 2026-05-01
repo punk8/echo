@@ -318,6 +318,7 @@ Settings:
 - Provider configuration status.
 - Language preference.
 - Audio behavior.
+- Interaction sounds provide lightweight start, completion, and error feedback when enabled, and stay silent when disabled.
 - Launch and Dock behavior.
 - History retention.
 
