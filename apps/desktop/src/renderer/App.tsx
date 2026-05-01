@@ -12,6 +12,7 @@ import type { PermissionStatusSnapshot } from "../main/platform/permissions";
 import type { ProviderStatus } from "../main/dictation/providerStatus";
 import type { HistoryRow } from "../main/storage/historyRepository";
 import type { EchoSettings } from "../main/storage/settingsRepository";
+import { listMicrophoneDevices, type MicrophoneDevice } from "./recording/audioDevices";
 import { createAudioRecorder, type AudioRecorder } from "./recording/audioRecorder";
 import "./styles.css";
 
@@ -32,6 +33,9 @@ export function App() {
   const [snapshot, setSnapshot] = useState<AppStateSnapshot>({ state: { status: "idle" }, settings: defaultSettings });
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [dictionary, setDictionary] = useState<DictionaryTermRow[]>([]);
+  const [microphoneDevices, setMicrophoneDevices] = useState<MicrophoneDevice[]>([
+    { id: "system", label: "System default" }
+  ]);
   const [permissions, setPermissions] = useState<PermissionStatusSnapshot>({
     microphone: "unknown",
     accessibility: "denied"
@@ -160,6 +164,7 @@ export function App() {
         <SettingsPage
           settings={snapshot.settings}
           providerStatus={providerStatus}
+          microphoneDevices={microphoneDevices}
           permissions={permissions}
           onSave={(settings) => void saveSettings(settings)}
           onRestoreDefaultShortcut={() => void saveSettings({ shortcut: "Alt+Space" })}
@@ -171,18 +176,20 @@ export function App() {
   );
 
   async function refresh() {
-    const [appState, rows, terms, permissionStatus, provider] = await Promise.all([
+    const [appState, rows, terms, permissionStatus, provider, devices] = await Promise.all([
       desktopApi.getAppState(),
       desktopApi.listHistory(),
       desktopApi.listDictionaryTerms(),
       desktopApi.getPermissionStatus(),
-      desktopApi.getProviderStatus()
+      desktopApi.getProviderStatus(),
+      listMicrophoneDevices()
     ]);
     setSnapshot(appState);
     setHistory(rows);
     setDictionary(terms);
     setPermissions(permissionStatus);
     setProviderStatus(provider);
+    setMicrophoneDevices(devices);
   }
 
   async function toggleDictation() {
@@ -244,6 +251,7 @@ export function App() {
 
   async function requestMicrophonePermission() {
     setPermissions(await desktopApi.requestMicrophonePermission());
+    setMicrophoneDevices(await listMicrophoneDevices());
   }
 
   async function requestAccessibilityPermission() {

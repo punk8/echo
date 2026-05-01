@@ -1,10 +1,17 @@
 import type { PermissionStatusSnapshot } from "../../main/platform/permissions";
 import type { ProviderStatus } from "../../main/dictation/providerStatus";
 import type { EchoSettings } from "../../main/storage/settingsRepository";
+import type { MicrophoneDevice } from "../recording/audioDevices";
+
+const systemDefaultDevice: MicrophoneDevice = {
+  id: "system",
+  label: "System default"
+};
 
 export function SettingsPage({
   settings,
   providerStatus,
+  microphoneDevices = [systemDefaultDevice],
   permissions = { microphone: "unknown", accessibility: "denied" },
   onSave,
   onRestoreDefaultShortcut,
@@ -13,6 +20,7 @@ export function SettingsPage({
 }: {
   settings: EchoSettings;
   providerStatus: ProviderStatus;
+  microphoneDevices?: MicrophoneDevice[];
   permissions?: PermissionStatusSnapshot;
   onSave: (settings: Partial<EchoSettings>) => void;
   onRestoreDefaultShortcut: () => void;
@@ -44,7 +52,11 @@ export function SettingsPage({
             value={settings.microphoneDeviceId}
             onChange={(event) => onSave({ microphoneDeviceId: event.target.value })}
           >
-            <option value="system">System default</option>
+            {withSelectedMicrophone(settings.microphoneDeviceId, microphoneDevices).map((device) => (
+              <option key={device.id} value={device.id}>
+                {device.label}
+              </option>
+            ))}
           </select>
         </label>
         <PermissionRow
@@ -130,6 +142,19 @@ export function SettingsPage({
       </section>
     </section>
   );
+}
+
+function withSelectedMicrophone(selectedId: string, devices: MicrophoneDevice[]) {
+  if (devices.some((device) => device.id === selectedId)) {
+    return devices;
+  }
+  return [
+    ...devices,
+    {
+      id: selectedId,
+      label: "Selected microphone unavailable"
+    }
+  ];
 }
 
 function PermissionRow({

@@ -20,12 +20,17 @@ describe("SettingsPage", () => {
       <SettingsPage
         settings={settings}
         providerStatus={{ reachable: true, apiBaseUrl: "http://127.0.0.1:43110" }}
+        microphoneDevices={[
+          { id: "system", label: "System default" },
+          { id: "studio", label: "Studio Mic" }
+        ]}
         onSave={vi.fn()}
         onRestoreDefaultShortcut={vi.fn()}
       />
     );
 
     expect(markup).toContain("Restore Default");
+    expect(markup).toContain("Studio Mic");
   });
 
   it("renders real dictation settings and provider status", () => {
