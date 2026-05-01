@@ -60,7 +60,7 @@ describe("SettingsPage", () => {
         providerStatus={{
           reachable: false,
           apiBaseUrl: "http://127.0.0.1:43110",
-          errorCode: "config.llm_missing"
+          errorCode: "config.llm_model_missing"
         }}
         onSave={vi.fn()}
         onRestoreDefaultShortcut={vi.fn()}
@@ -69,6 +69,25 @@ describe("SettingsPage", () => {
 
     expect(markup).toContain("LLM configuration missing");
     expect(markup).toContain("LLM_MODEL");
+    expect(markup).not.toContain("LLM_API_KEY");
+    expect(markup).not.toContain("replace-with-local-secret");
+  });
+
+  it("explains shared API_KEY fallback when provider keys are missing", () => {
+    const markup = renderToStaticMarkup(
+      <SettingsPage
+        settings={settings}
+        providerStatus={{
+          reachable: false,
+          apiBaseUrl: "http://127.0.0.1:43110",
+          errorCode: "config.llm_key_missing"
+        }}
+        onSave={vi.fn()}
+        onRestoreDefaultShortcut={vi.fn()}
+      />
+    );
+
+    expect(markup).toContain("Set LLM_API_KEY or API_KEY");
     expect(markup).not.toContain("replace-with-local-secret");
   });
 

@@ -400,7 +400,10 @@ Client errors:
 Server/config errors:
 
 - `config.asr_missing`
+- `config.asr_key_missing`
 - `config.llm_missing`
+- `config.llm_model_missing`
+- `config.llm_key_missing`
 - `server.asr_failed`
 - `server.refine_failed`
 - `server.provider_timeout`

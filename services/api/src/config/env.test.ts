@@ -22,7 +22,7 @@ describe("loadApiEnv", () => {
     expect(env.llm.temperature).toBe(0.2);
   });
 
-  it("rejects missing ASR key without logging the key value", () => {
+  it("rejects missing ASR key with a specific config error", () => {
     expect(() =>
       loadApiEnv({
         API_HOST: "127.0.0.1",
@@ -37,7 +37,7 @@ describe("loadApiEnv", () => {
         LLM_API_KEY: "llm-secret",
         LLM_TEMPERATURE: "0.2"
       })
-    ).toThrow("config.asr_missing");
+    ).toThrow("config.asr_key_missing");
   });
 
   it("uses API_KEY as a local fallback for ASR and LLM keys", () => {
@@ -88,6 +88,15 @@ describe("loadApiEnv", () => {
         LLM_MODEL: "",
         LLM_BASE_URL: "默认"
       })
-    ).toThrow("config.llm_missing");
+    ).toThrow("config.llm_model_missing");
+  });
+
+  it("rejects missing LLM key with a specific config error", () => {
+    expect(() =>
+      loadApiEnv({
+        ASR_API_KEY: "asr-secret",
+        LLM_MODEL: "gpt-4o"
+      })
+    ).toThrow("config.llm_key_missing");
   });
 });
