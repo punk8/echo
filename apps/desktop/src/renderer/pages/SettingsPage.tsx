@@ -1,8 +1,10 @@
 import type { PermissionStatusSnapshot } from "../../main/platform/permissions";
+import type { ProviderStatus } from "../../main/dictation/providerStatus";
 import type { EchoSettings } from "../../main/storage/settingsRepository";
 
 export function SettingsPage({
   settings,
+  providerStatus,
   permissions = { microphone: "unknown", accessibility: "denied" },
   onSave,
   onRestoreDefaultShortcut,
@@ -10,6 +12,7 @@ export function SettingsPage({
   onRequestAccessibility = () => undefined
 }: {
   settings: EchoSettings;
+  providerStatus: ProviderStatus;
   permissions?: PermissionStatusSnapshot;
   onSave: (settings: Partial<EchoSettings>) => void;
   onRestoreDefaultShortcut: () => void;
@@ -37,7 +40,10 @@ export function SettingsPage({
         </label>
         <label>
           Microphone
-          <select defaultValue="system">
+          <select
+            value={settings.microphoneDeviceId}
+            onChange={(event) => onSave({ microphoneDeviceId: event.target.value })}
+          >
             <option value="system">System default</option>
           </select>
         </label>
@@ -63,7 +69,21 @@ export function SettingsPage({
         </label>
         <label>
           Provider
-          <input value="Real provider via local API" readOnly />
+          <span className="provider-status">
+            <strong>{providerStatus.reachable ? "Local API reachable" : "Local API offline"}</strong>
+            <small>{providerStatus.apiBaseUrl}</small>
+          </span>
+        </label>
+        <label>
+          Output Style
+          <select
+            value={settings.outputStyle}
+            onChange={(event) => onSave({ outputStyle: event.target.value as EchoSettings["outputStyle"] })}
+          >
+            <option value="literal">Literal</option>
+            <option value="balanced">Balanced</option>
+            <option value="polished">Polished</option>
+          </select>
         </label>
         <label>
           Retention
@@ -76,12 +96,36 @@ export function SettingsPage({
           </select>
         </label>
         <label className="toggle-row">
+          Interaction sounds
+          <input
+            type="checkbox"
+            checked={settings.interactionSounds}
+            onChange={(event) => onSave({ interactionSounds: event.target.checked })}
+          />
+        </label>
+        <label className="toggle-row">
+          Mute other audio
+          <input
+            type="checkbox"
+            checked={settings.muteOtherAudioWhileDictating}
+            onChange={(event) => onSave({ muteOtherAudioWhileDictating: event.target.checked })}
+          />
+        </label>
+        <label className="toggle-row">
           Launch at login
-          <input type="checkbox" />
+          <input
+            type="checkbox"
+            checked={settings.launchAtLogin}
+            onChange={(event) => onSave({ launchAtLogin: event.target.checked })}
+          />
         </label>
         <label className="toggle-row">
           Show Dock icon
-          <input type="checkbox" defaultChecked />
+          <input
+            type="checkbox"
+            checked={settings.showDockIcon}
+            onChange={(event) => onSave({ showDockIcon: event.target.checked })}
+          />
         </label>
       </section>
     </section>

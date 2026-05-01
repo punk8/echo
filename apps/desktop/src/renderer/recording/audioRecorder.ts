@@ -7,6 +7,7 @@ export interface AudioRecorderResult {
 }
 
 export interface AudioRecorderDeps {
+  deviceId?: string;
   mediaDevices?: Pick<MediaDevices, "getUserMedia">;
   MediaRecorder?: typeof MediaRecorder;
   now?: () => number;
@@ -43,7 +44,7 @@ export function createAudioRecorder(deps: AudioRecorderDeps = {}): AudioRecorder
 
   return {
     async start() {
-      stream = await mediaDevices.getUserMedia({ audio: true });
+      stream = await mediaDevices.getUserMedia({ audio: getAudioConstraints(deps.deviceId) });
       const selected = chooseAudioMimeType(MediaRecorderCtor);
       audioFormat = selected.audioFormat;
       chunks = [];
@@ -93,6 +94,15 @@ export function createAudioRecorder(deps: AudioRecorderDeps = {}): AudioRecorder
       stream = undefined;
       chunks = [];
     }
+  };
+}
+
+function getAudioConstraints(deviceId: string | undefined): true | MediaTrackConstraints {
+  if (!deviceId || deviceId === "system") {
+    return true;
+  }
+  return {
+    deviceId: { exact: deviceId }
   };
 }
 

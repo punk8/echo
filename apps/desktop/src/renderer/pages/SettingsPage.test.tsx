@@ -2,16 +2,49 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { SettingsPage } from "./SettingsPage";
 
+const settings = {
+  historyRetention: "1_week" as const,
+  shortcut: "CommandOrControl+Space",
+  language: "auto",
+  microphoneDeviceId: "system",
+  interactionSounds: true,
+  muteOtherAudioWhileDictating: false,
+  launchAtLogin: false,
+  showDockIcon: true,
+  outputStyle: "balanced" as const
+};
+
 describe("SettingsPage", () => {
   it("offers restoring the default shortcut", () => {
     const markup = renderToStaticMarkup(
       <SettingsPage
-        settings={{ historyRetention: "1_week", shortcut: "CommandOrControl+Space", language: "auto" }}
+        settings={settings}
+        providerStatus={{ reachable: true, apiBaseUrl: "http://127.0.0.1:43110" }}
         onSave={vi.fn()}
         onRestoreDefaultShortcut={vi.fn()}
       />
     );
 
     expect(markup).toContain("Restore Default");
+  });
+
+  it("renders real dictation settings and provider status", () => {
+    const markup = renderToStaticMarkup(
+      <SettingsPage
+        settings={{ ...settings, outputStyle: "polished", interactionSounds: false, muteOtherAudioWhileDictating: true }}
+        providerStatus={{ reachable: false, apiBaseUrl: "http://127.0.0.1:43110" }}
+        onSave={vi.fn()}
+        onRestoreDefaultShortcut={vi.fn()}
+      />
+    );
+
+    expect(markup).toContain("Output Style");
+    expect(markup).toContain("Polished");
+    expect(markup).toContain("Interaction sounds");
+    expect(markup).toContain("Mute other audio");
+    expect(markup).toContain("Launch at login");
+    expect(markup).toContain("Show Dock icon");
+    expect(markup).toContain("Local API offline");
+    expect(markup).toContain("http://127.0.0.1:43110");
   });
 });

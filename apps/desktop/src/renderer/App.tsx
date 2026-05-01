@@ -18,7 +18,13 @@ import "./styles.css";
 const defaultSettings: EchoSettings = {
   historyRetention: "1_week",
   shortcut: "Alt+Space",
-  language: "auto"
+  language: "auto",
+  microphoneDeviceId: "system",
+  interactionSounds: true,
+  muteOtherAudioWhileDictating: false,
+  launchAtLogin: false,
+  showDockIcon: true,
+  outputStyle: "balanced"
 };
 
 export function App() {
@@ -55,6 +61,7 @@ export function App() {
     });
     const removeRecorderStart = desktopApi.onRecorderStart(async () => {
       const recorder = createAudioRecorder({
+        deviceId: snapshotRef.current.settings.microphoneDeviceId,
         onLevel: (level) => {
           setLevelSamples((current) => [...current.slice(-17), level]);
         }
@@ -152,6 +159,7 @@ export function App() {
       {page === "settings" ? (
         <SettingsPage
           settings={snapshot.settings}
+          providerStatus={providerStatus}
           permissions={permissions}
           onSave={(settings) => void saveSettings(settings)}
           onRestoreDefaultShortcut={() => void saveSettings({ shortcut: "Alt+Space" })}

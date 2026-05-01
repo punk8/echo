@@ -114,7 +114,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
         language: settings.language,
         context: session.context,
         dictionary: getDictionaryTerms(),
-        preferences: getPreferences()
+        preferences: getPreferences(settings)
       });
 
       state = applyDictationEvent(state, { type: "insert_started" });
@@ -191,9 +191,9 @@ function isSameInsertionTarget(startContext: DictationContext, currentContext: D
   );
 }
 
-function getPreferences(): DictationPreferences {
+function getPreferences(settings: EchoSettings): DictationPreferences {
   return {
-    style: "balanced",
+    style: settings.outputStyle,
     output_language: "follow_input",
     format_lists: true
   };

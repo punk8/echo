@@ -67,4 +67,23 @@ describe("createAudioRecorder", () => {
     expect(await result.blob.text()).toBe("audio");
     expect(levels).toEqual([0.42]);
   });
+
+  it("requests a configured microphone device when one is selected", async () => {
+    const getUserMedia = vi.fn().mockResolvedValue({ getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream);
+    const recorder = createAudioRecorder({
+      deviceId: "built-in-mic",
+      mediaDevices: { getUserMedia },
+      MediaRecorder: FakeMediaRecorder as unknown as typeof MediaRecorder,
+      createLevelSampler: () => () => undefined
+    });
+
+    await recorder.start();
+
+    expect(getUserMedia).toHaveBeenCalledWith({
+      audio: {
+        deviceId: { exact: "built-in-mic" }
+      }
+    });
+    recorder.cancel();
+  });
 });

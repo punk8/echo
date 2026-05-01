@@ -336,12 +336,28 @@ select {
 }
 
 .permission-row span,
-.shortcut-row span {
+.shortcut-row span,
+.provider-status {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
   align-items: center;
+}
+
+.provider-status {
+  max-width: 260px;
+}
+
+.provider-status strong,
+.provider-status small {
+  display: block;
+  text-align: right;
+}
+
+.provider-status small {
+  color: #6a7680;
+  font-weight: 500;
 }
 
 .permission-row strong {

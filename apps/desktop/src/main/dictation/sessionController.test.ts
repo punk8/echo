@@ -12,6 +12,18 @@ const context = {
   nearby_text: ""
 };
 
+const defaultSettings: EchoSettings = {
+  historyRetention: "1_week",
+  shortcut: "Alt+Space",
+  language: "auto",
+  microphoneDeviceId: "system",
+  interactionSounds: true,
+  muteOtherAudioWhileDictating: false,
+  launchAtLogin: false,
+  showDockIcon: true,
+  outputStyle: "balanced"
+};
+
 function createDeps() {
   const historyRows: unknown[] = [];
   return {
@@ -74,7 +86,7 @@ function createDeps() {
           ])
         },
         settings: {
-          getSettings: vi.fn<() => EchoSettings>(() => ({ historyRetention: "1_week", shortcut: "Alt+Space", language: "auto" }))
+          getSettings: vi.fn<() => EchoSettings>(() => defaultSettings)
         }
       }
     }
@@ -154,9 +166,8 @@ describe("createDictationSessionController", () => {
   it("does not store history when retention is never", async () => {
     const { deps, historyRows } = createDeps();
     deps.repositories.settings.getSettings.mockReturnValue({
-      historyRetention: "never",
-      shortcut: "Alt+Space",
-      language: "auto"
+      ...defaultSettings,
+      historyRetention: "never"
     });
     const controller = createDictationSessionController(deps);
 
@@ -196,5 +207,25 @@ describe("createDictationSessionController", () => {
       insertion_method: "clipboard",
       insertion_status: "copied"
     });
+  });
+
+  it("passes the configured output style to backend refinement preferences", async () => {
+    const { deps } = createDeps();
+    deps.repositories.settings.getSettings.mockReturnValue({
+      ...defaultSettings,
+      outputStyle: "polished"
+    });
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+    await controller.stopDictation();
+
+    expect(deps.backend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        preferences: expect.objectContaining({
+          style: "polished"
+        })
+      })
+    );
   });
 });

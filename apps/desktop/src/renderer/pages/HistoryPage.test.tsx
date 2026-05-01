@@ -7,7 +7,17 @@ describe("HistoryPage", () => {
     const markup = renderToStaticMarkup(
       <HistoryPage
         history={[]}
-        settings={{ historyRetention: "1_week", shortcut: "Alt+Space", language: "auto" }}
+        settings={{
+          historyRetention: "1_week",
+          shortcut: "Alt+Space",
+          language: "auto",
+          microphoneDeviceId: "system",
+          interactionSounds: true,
+          muteOtherAudioWhileDictating: false,
+          launchAtLogin: false,
+          showDockIcon: true,
+          outputStyle: "balanced"
+        }}
         onRetentionChange={vi.fn()}
         onCopy={vi.fn()}
         onDelete={vi.fn()}

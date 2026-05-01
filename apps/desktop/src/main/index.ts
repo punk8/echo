@@ -6,6 +6,7 @@ import { createRendererRecorderBridge } from "./dictation/rendererRecorderBridge
 import { createDictationSessionController } from "./dictation/sessionController";
 import { getUserDataPath } from "./appPaths";
 import { registerIpcHandlers } from "./ipc";
+import { applyAppBehaviorSettings } from "./platform/appBehavior";
 import { captureContext } from "./platform/context";
 import { copyTextToClipboard, pasteTextWithClipboardFallback } from "./platform/insertion";
 import {
@@ -48,6 +49,11 @@ if (!gotLock) {
     const history = createHistoryRepository(db);
     const settings = createSettingsRepository(db);
     const dictionary = createDictionaryRepository(db);
+    applyAppBehaviorSettings(settings.getSettings(), {
+      getLoginItemSettings: () => app.getLoginItemSettings(),
+      setLoginItemSettings: (options) => app.setLoginItemSettings(options),
+      dock: app.dock
+    });
     const recorder = createRendererRecorderBridge({
       webContents: hubWindow.webContents,
       ipcMain,
@@ -111,6 +117,11 @@ if (!gotLock) {
         if (!shortcutResult.registered) {
           hubWindow?.webContents.send("echo:shortcut-error", shortcutResult);
         }
+        applyAppBehaviorSettings(nextSettings, {
+          getLoginItemSettings: () => app.getLoginItemSettings(),
+          setLoginItemSettings: (options) => app.setLoginItemSettings(options),
+          dock: app.dock
+        });
       }
     });
 
