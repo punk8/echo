@@ -31,6 +31,7 @@ export interface DictationSessionControllerDeps {
   };
   backend: (input: Omit<ProcessDictationInput, "apiBaseUrl" | "fetchImpl">) => Promise<DictationSuccessResponse>;
   insertText: (text: string) => Promise<InsertionResult>;
+  copyText: (text: string) => Promise<InsertionResult>;
   overlay: {
     showRecording: (input: { sessionId: string; context: DictationContext }) => void;
     showProcessing: (input: { sessionId: string }) => void;
@@ -117,7 +118,10 @@ export function createDictationSessionController(deps: DictationSessionControlle
       });
 
       state = applyDictationEvent(state, { type: "insert_started" });
-      const insertion = await deps.insertText(response.refined_text);
+      const currentContext = await deps.captureContext();
+      const insertion = isSameInsertionTarget(session.context, currentContext)
+        ? await deps.insertText(response.refined_text)
+        : await deps.copyText(response.refined_text);
 
       storeHistory(settings, buildCompletedHistoryRow({ session, recording, response, insertion }));
 
@@ -177,6 +181,14 @@ export function createDictationSessionController(deps: DictationSessionControlle
     deps.repositories.history.insertHistoryRow(row);
     deps.repositories.history.pruneHistory(settings.historyRetention);
   }
+}
+
+function isSameInsertionTarget(startContext: DictationContext, currentContext: DictationContext) {
+  return (
+    startContext.bundle_id === currentContext.bundle_id &&
+    startContext.app_name === currentContext.app_name &&
+    currentContext.writable
+  );
 }
 
 function getPreferences(): DictationPreferences {

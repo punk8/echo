@@ -7,7 +7,7 @@ import { createDictationSessionController } from "./dictation/sessionController"
 import { getUserDataPath } from "./appPaths";
 import { registerIpcHandlers } from "./ipc";
 import { captureContext } from "./platform/context";
-import { pasteTextWithClipboardFallback } from "./platform/insertion";
+import { copyTextToClipboard, pasteTextWithClipboardFallback } from "./platform/insertion";
 import {
   getPermissionStatus,
   requestAccessibilityPermission,
@@ -61,6 +61,7 @@ if (!gotLock) {
       recorder,
       backend: (input) => processDictation({ ...input, apiBaseUrl: getApiBaseUrl() }),
       insertText: pasteTextWithClipboardFallback,
+      copyText: copyTextToClipboard,
       overlay: {
         showRecording: ({ sessionId }) => {
           overlay.showInactive();

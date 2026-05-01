@@ -45,6 +45,7 @@ function createDeps() {
         quality: { risk: "low" as const, warnings: [] }
       }),
       insertText: vi.fn().mockResolvedValue({ method: "clipboard_paste" as const, status: "inserted" as const }),
+      copyText: vi.fn().mockResolvedValue({ method: "clipboard" as const, status: "copied" as const }),
       overlay: {
         showRecording: vi.fn(),
         showProcessing: vi.fn(),
@@ -173,5 +174,27 @@ describe("createDictationSessionController", () => {
     await controller.stopDictation();
 
     expect(deps.repositories.history.pruneHistory).toHaveBeenCalledWith("1_week");
+  });
+
+  it("copies refined text without pasting when focus changes before insertion", async () => {
+    const { deps, historyRows } = createDeps();
+    deps.captureContext
+      .mockResolvedValueOnce(context)
+      .mockResolvedValueOnce({
+        ...context,
+        app_name: "Notes",
+        bundle_id: "com.apple.Notes"
+      });
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+    await controller.stopDictation();
+
+    expect(deps.insertText).not.toHaveBeenCalled();
+    expect(deps.copyText).toHaveBeenCalledWith("Tomorrow at three.");
+    expect(historyRows[0]).toMatchObject({
+      insertion_method: "clipboard",
+      insertion_status: "copied"
+    });
   });
 });

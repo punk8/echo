@@ -33,6 +33,12 @@ export async function pasteTextWithClipboardFallback(text: string, deps: Inserti
   }
 }
 
+export async function copyTextToClipboard(text: string, deps: Pick<InsertionDeps, "clipboard"> = {}): Promise<InsertionResult> {
+  const clipboard = deps.clipboard ?? (await import("electron")).clipboard;
+  clipboard.writeText(text);
+  return { method: "clipboard", status: "copied" };
+}
+
 async function runMacPasteCommand() {
   await execFileAsync("osascript", ["-e", 'tell application "System Events" to keystroke "v" using command down'], {
     timeout: 2000
