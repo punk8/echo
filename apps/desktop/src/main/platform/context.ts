@@ -3,6 +3,7 @@ import { promisify } from "node:util";
 import type { DictationContext } from "@echo/shared";
 
 const execFileAsync = promisify(execFile);
+const maxNearbyTextLength = 500;
 
 export interface ActiveApplicationInput {
   appName?: string;
@@ -16,14 +17,15 @@ export interface ActiveApplicationInput {
 
 export function buildFallbackContext(input: ActiveApplicationInput = {}): DictationContext {
   const appName = sanitize(input.appName) ?? "Unknown App";
+  const writable = resolveWritable(input);
   return {
     app_name: appName,
     bundle_id: sanitize(input.bundleId) ?? `unknown.${slugify(appName)}`,
     window_title: sanitize(input.windowTitle) ?? "",
     ...(input.focusedRole ? { focused_role: input.focusedRole } : {}),
-    writable: resolveWritable(input),
+    writable,
     selection_present: input.selectionPresent ?? false,
-    nearby_text: input.nearbyText ?? ""
+    nearby_text: writable ? sanitizeNearbyText(input.nearbyText) : ""
   };
 }
 
@@ -46,12 +48,17 @@ async function getFrontmostApplication(): Promise<ActiveApplicationInput> {
     'set focusedRole to ""',
     'set focusedValueSettable to "false"',
     'set selectionPresent to "false"',
+    'set nearbyText to ""',
     'try',
     'set windowTitle to name of front window of frontApp',
     'end try',
     'try',
     'set focusedElement to value of attribute "AXFocusedUIElement" of frontApp',
     'set focusedRole to value of attribute "AXRole" of focusedElement',
+    'try',
+    'set nearbyText to value of attribute "AXValue" of focusedElement as text',
+    `if (length of nearbyText) > ${maxNearbyTextLength} then set nearbyText to text 1 thru ${maxNearbyTextLength} of nearbyText`,
+    'end try',
     'try',
     'set focusedValueSettable to (settable of attribute "AXValue" of focusedElement) as string',
     'end try',
@@ -60,19 +67,22 @@ async function getFrontmostApplication(): Promise<ActiveApplicationInput> {
     'if selectedText is not "" then set selectionPresent to "true"',
     'end try',
     'end try',
-    'return appName & linefeed & bundleId & linefeed & windowTitle & linefeed & focusedRole & linefeed & focusedValueSettable & linefeed & selectionPresent',
+    'return appName & linefeed & bundleId & linefeed & windowTitle & linefeed & focusedRole & linefeed & focusedValueSettable & linefeed & selectionPresent & linefeed & nearbyText',
     'end tell'
   ].join("\n");
 
   const { stdout } = await execFileAsync("osascript", ["-e", script], { timeout: 1500 });
-  const [appName, bundleId, windowTitle, focusedRole, focusedValueSettable, selectionPresent] = stdout.trimEnd().split("\n");
+  const [appName, bundleId, windowTitle, focusedRole, focusedValueSettable, selectionPresent, ...nearbyTextLines] = stdout
+    .trimEnd()
+    .split("\n");
   return {
     ...(appName ? { appName } : {}),
     ...(bundleId ? { bundleId } : {}),
     ...(windowTitle ? { windowTitle } : {}),
     ...(focusedRole ? { focusedRole } : {}),
     ...(focusedValueSettable ? { focusedValueSettable: parseAppleScriptBoolean(focusedValueSettable) } : {}),
-    ...(selectionPresent ? { selectionPresent: parseAppleScriptBoolean(selectionPresent) } : {})
+    ...(selectionPresent ? { selectionPresent: parseAppleScriptBoolean(selectionPresent) } : {}),
+    ...(nearbyTextLines.length > 0 ? { nearbyText: nearbyTextLines.join("\n") } : {})
   };
 }
 
@@ -94,6 +104,10 @@ function parseAppleScriptBoolean(value: string) {
 function sanitize(value: string | undefined) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function sanitizeNearbyText(value: string | undefined) {
+  return sanitize(value)?.slice(0, maxNearbyTextLength) ?? "";
 }
 
 function slugify(value: string) {

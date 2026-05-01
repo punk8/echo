@@ -214,7 +214,7 @@ Context fields:
 - Focused accessibility role.
 - Browser URL/domain/title when safely available.
 - Focused element writable status.
-- Optional nearby text only if accessible and bounded.
+- Optional nearby text only if accessible and bounded to 500 characters.
 
 This helper must not capture full screen or full document content.
 
