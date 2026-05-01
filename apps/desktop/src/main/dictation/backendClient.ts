@@ -65,10 +65,20 @@ export async function processDictation(input: ProcessDictationInput): Promise<Di
   body.set("preferences", JSON.stringify(input.preferences));
   body.set("audio", new Blob([toArrayBuffer(input.audio)], { type: mimeType }), filename);
 
-  const response = await fetchImpl(`${trimTrailingSlash(input.apiBaseUrl)}/v1/dictation/process`, {
-    method: "POST",
-    body
-  });
+  let response: Awaited<ReturnType<FetchLike>>;
+  try {
+    response = await fetchImpl(`${trimTrailingSlash(input.apiBaseUrl)}/v1/dictation/process`, {
+      method: "POST",
+      body
+    });
+  } catch {
+    throw new BackendDictationError({
+      code: "network.unavailable",
+      message: "Network unavailable. Check your connection or local API.",
+      recoverable: true,
+      rawText: ""
+    });
+  }
 
   const payload = await response.json();
 

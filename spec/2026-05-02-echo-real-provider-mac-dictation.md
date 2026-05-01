@@ -395,6 +395,7 @@ Client errors:
 - `audio.device_unavailable`
 - `audio.no_speech_detected`
 - `insert.failed`
+- `network.unavailable`
 
 Server/config errors:
 

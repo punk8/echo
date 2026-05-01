@@ -4,6 +4,7 @@ export const DictationErrorCodes = [
   "shortcut.conflict",
   "target.no_writable_field",
   "target.focus_changed",
+  "network.unavailable",
   "audio.device_unavailable",
   "audio.no_speech_detected",
   "insert.failed",

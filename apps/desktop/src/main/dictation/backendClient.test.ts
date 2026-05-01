@@ -87,4 +87,35 @@ describe("processDictation", () => {
       })
     ).rejects.toMatchObject({ code: "server.asr_failed", rawText: "" } satisfies Partial<BackendDictationError>);
   });
+
+  it("maps network failures to a recoverable network error", async () => {
+    const fetchImpl = vi.fn().mockRejectedValue(new Error("fetch failed"));
+
+    await expect(
+      processDictation({
+        apiBaseUrl: "http://127.0.0.1:43110",
+        fetchImpl,
+        sessionId: "session-1",
+        audio: Buffer.from("audio"),
+        audioFormat: "wav",
+        durationMs: 1000,
+        language: "auto",
+        context: {
+          app_name: "TextEdit",
+          bundle_id: "com.apple.TextEdit",
+          window_title: "Untitled",
+          writable: true,
+          selection_present: false,
+          nearby_text: ""
+        },
+        dictionary: [],
+        preferences: { style: "balanced", output_language: "follow_input", format_lists: true }
+      })
+    ).rejects.toMatchObject({
+      code: "network.unavailable",
+      message: "Network unavailable. Check your connection or local API.",
+      recoverable: true,
+      rawText: ""
+    } satisfies Partial<BackendDictationError>);
+  });
 });
