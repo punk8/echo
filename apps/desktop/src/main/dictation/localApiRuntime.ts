@@ -13,6 +13,7 @@ export interface EnsureLocalApiRuntimeInput {
   env?: NodeJS.ProcessEnv;
   cwd?: string;
   workspaceRoot?: string;
+  resourcePath?: string;
   fileExists?: (filePath: string) => boolean;
   fetchImpl?: (url: string) => Promise<{ ok: boolean }>;
   spawn?: (
@@ -36,6 +37,7 @@ const defaultPort = "43110";
 const healthRetryCount = 12;
 const healthRetryIntervalMs = 250;
 const builtApiEntry = "services/api/dist/services/api/src/index.js";
+const packagedApiEntry = "api/index.mjs";
 
 export async function ensureLocalApiRuntime(input: EnsureLocalApiRuntimeInput = {}): Promise<LocalApiRuntime> {
   const env = input.env ?? process.env;
@@ -64,10 +66,14 @@ export async function ensureLocalApiRuntime(input: EnsureLocalApiRuntimeInput = 
 
   const workspaceRoot = input.workspaceRoot ?? findWorkspaceRoot(input.cwd ?? process.cwd());
   const spawn = input.spawn ?? spawnChild;
-  const localApiCommand = resolveLocalApiCommand(workspaceRoot, input.fileExists ?? existsSync);
+  const localApiCommand = resolveLocalApiCommand({
+    workspaceRoot,
+    resourcePath: input.resourcePath ?? getElectronResourcePath(),
+    fileExists: input.fileExists ?? existsSync
+  });
   let startupError: string | undefined;
   const child = spawn(localApiCommand.command, localApiCommand.args, {
-    cwd: workspaceRoot,
+    cwd: localApiCommand.cwd,
     env: {
       ...process.env,
       ...env,
@@ -138,18 +144,41 @@ function findWorkspaceRoot(start: string) {
   }
 }
 
-function resolveLocalApiCommand(workspaceRoot: string, fileExists: (filePath: string) => boolean) {
+function resolveLocalApiCommand(input: {
+  workspaceRoot: string;
+  resourcePath?: string;
+  fileExists: (filePath: string) => boolean;
+}) {
+  if (input.resourcePath) {
+    const packagedEntry = path.join(input.resourcePath, packagedApiEntry);
+    if (input.fileExists(packagedEntry)) {
+      return {
+        command: "node",
+        args: [packagedEntry],
+        cwd: input.resourcePath
+      };
+    }
+  }
+
+  const workspaceRoot = input.workspaceRoot;
+  const fileExists = input.fileExists;
   if (fileExists(path.join(workspaceRoot, builtApiEntry))) {
     return {
       command: "node",
-      args: [builtApiEntry]
+      args: [builtApiEntry],
+      cwd: workspaceRoot
     };
   }
 
   return {
     command: "pnpm",
-    args: ["--filter", "@echo/api", "exec", "tsx", "src/index.ts"]
+    args: ["--filter", "@echo/api", "exec", "tsx", "src/index.ts"],
+    cwd: workspaceRoot
   };
+}
+
+function getElectronResourcePath() {
+  return (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
 }
 
 function normalizeBlank(value: string | undefined) {

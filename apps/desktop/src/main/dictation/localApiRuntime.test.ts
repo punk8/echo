@@ -105,6 +105,35 @@ describe("ensureLocalApiRuntime", () => {
     );
   });
 
+  it("prefers a packaged API resource when it exists", async () => {
+    const child = { kill: vi.fn(), on: vi.fn() };
+    const spawn = vi.fn(() => child);
+    const fetchImpl = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("ECONNREFUSED"))
+      .mockResolvedValueOnce({ ok: true });
+    const fileExists = vi.fn((filePath: string) => filePath === "/Echo.app/Contents/Resources/api/index.mjs");
+
+    await ensureLocalApiRuntime({
+      env: { API_HOST: "127.0.0.1", API_PORT: "43110" },
+      cwd: "/workspace/echo/apps/desktop",
+      workspaceRoot: "/workspace/echo",
+      resourcePath: "/Echo.app/Contents/Resources",
+      spawn,
+      fetchImpl,
+      fileExists,
+      sleep: vi.fn().mockResolvedValue(undefined)
+    });
+
+    expect(spawn).toHaveBeenCalledWith(
+      "node",
+      ["/Echo.app/Contents/Resources/api/index.mjs"],
+      expect.objectContaining({
+        cwd: "/Echo.app/Contents/Resources"
+      })
+    );
+  });
+
   it("captures local API startup configuration errors", async () => {
     const child = {
       kill: vi.fn(),

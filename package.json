@@ -13,10 +13,12 @@
     "test": "pnpm --filter @echo/desktop rebuild:native:node && vitest run",
     "test:watch": "vitest",
     "lint": "pnpm typecheck",
-    "verify": "pnpm typecheck && pnpm test && pnpm build"
+    "verify": "pnpm typecheck && pnpm test && pnpm build",
+    "package:mac": "pnpm build && pnpm --filter @echo/api build:bundle && pnpm --filter @echo/desktop package:mac"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",
+    "esbuild": "^0.28.0",
     "typescript": "^5.8.0",
     "vitest": "^3.0.0"
   },

@@ -58,3 +58,15 @@ RUN_REAL_PROVIDER_TESTS=1 pnpm --filter @echo/api test:real
 ```
 
 Those tests may create provider cost. Run them only with valid local keys and when you intend to verify live provider configuration.
+
+## Packaging
+
+Build an unsigned macOS app directory:
+
+```bash
+pnpm package:mac
+```
+
+The packaging command builds the Electron app, bundles the local API into `services/api/bundle/index.mjs`, and copies that bundle into `Echo.app/Contents/Resources/api/index.mjs`. The output is written to `release/mac-arm64/Echo.app`.
+
+This local package is intentionally unsigned (`identity: null`) for development. Distribution builds still need a Developer ID signing and notarization workflow.
