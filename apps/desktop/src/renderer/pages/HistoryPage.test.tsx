@@ -105,6 +105,33 @@ describe("HistoryPage", () => {
     expect(markup).toContain("18 chars");
   });
 
+  it("shows raw transcript and complete provider metadata for troubleshooting", () => {
+    const markup = renderToStaticMarkup(
+      <HistoryPage
+        history={[createHistoryRow("session-1")]}
+        settings={{
+          historyRetention: "1_week",
+          shortcut: "Alt+Space",
+          language: "auto",
+          microphoneDeviceId: "system",
+          interactionSounds: true,
+          muteOtherAudioWhileDictating: false,
+          launchAtLogin: false,
+          showDockIcon: true,
+          outputStyle: "balanced"
+        }}
+        onRetentionChange={vi.fn()}
+        onCopy={vi.fn()}
+        onDelete={vi.fn()}
+        onRetry={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
+
+    expect(markup).toContain("Raw: um tomorrow at seven no make it three");
+    expect(markup).toContain("openai:gpt-4o-transcribe / openai-compatible:gpt-4o");
+  });
+
   it("only enables retry when a failed or cancelled row has retained audio", () => {
     const retryable = {
       ...createHistoryRow("failed-1"),

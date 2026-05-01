@@ -62,8 +62,9 @@ export function HistoryPage({
                 <strong>{row.refined_text || row.raw_text || row.error_code}</strong>
                 <span>
                   {formatDate(row.created_at)} · {row.focused_app_name} · {formatDuration(row.duration_ms)} ·{" "}
-                  {row.output_length} chars · {row.provider_asr}
+                  {row.output_length} chars · {formatProviders(row)}
                 </span>
+                {row.raw_text && row.raw_text !== row.refined_text ? <span>Raw: {row.raw_text}</span> : null}
               </div>
               <span className={`status-chip ${row.insertion_status}`}>{row.insertion_status}</span>
               <div className="row-actions">
@@ -100,4 +101,8 @@ function formatDate(value: string) {
 
 function formatDuration(value: number) {
   return `${(value / 1000).toFixed(1)}s`;
+}
+
+function formatProviders(row: HistoryRow) {
+  return `${row.provider_asr} / ${row.provider_llm}`;
 }
