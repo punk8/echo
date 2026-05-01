@@ -77,6 +77,17 @@ describe("historyRepository", () => {
     expect(deletedAudioPaths).toEqual(["/tmp/row-1.webm"]);
   });
 
+  it("loads one history row by id for retained-recording retry", () => {
+    const repo = createHistoryRepository(temp.db);
+    repo.insertHistoryRow(createHistoryRow("row-1"));
+
+    const row = repo.getHistoryRow("row-1");
+
+    expect(row?.id).toBe("row-1");
+    expect(row?.audio_local_path).toBe("/tmp/row-1.webm");
+    expect(repo.getHistoryRow("missing")).toBeUndefined();
+  });
+
   it("prunes rows older than the selected retention window", () => {
     const repo = createHistoryRepository(temp.db);
     repo.insertHistoryRow(createHistoryRow("old"));

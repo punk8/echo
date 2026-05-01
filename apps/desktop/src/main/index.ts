@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { rm } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import { app, BrowserWindow, ipcMain, shell } from "electron";
 import { processDictation } from "./dictation/backendClient";
 import { ensureLocalApiRuntime, type LocalApiRuntime } from "./dictation/localApiRuntime";
@@ -74,6 +74,7 @@ if (!gotLock) {
       backend: (input) => processDictation({ ...input, apiBaseUrl: runtime.apiBaseUrl }),
       insertText: insertTextWithAccessibilityFallback,
       copyText: copyTextToClipboard,
+      readLocalRecording: readFile,
       deleteLocalRecording: (localPath) => rm(localPath, { force: true }),
       overlay: {
         showRecording: ({ sessionId }) => {

@@ -11,7 +11,7 @@ import { BackendDictationError, type ProcessDictationInput } from "./backendClie
 import type { InsertionResult } from "../platform/insertion";
 import type { PermissionStatusSnapshot } from "../platform/permissions";
 import type { DictionaryTermRow } from "../storage/dictionaryRepository";
-import type { HistoryRowInput } from "../storage/historyRepository";
+import type { HistoryRow, HistoryRowInput } from "../storage/historyRepository";
 import type { EchoSettings } from "../storage/settingsRepository";
 
 export interface RecordedAudio {
@@ -34,6 +34,7 @@ export interface DictationSessionControllerDeps {
   backend: (input: Omit<ProcessDictationInput, "apiBaseUrl" | "fetchImpl">) => Promise<DictationSuccessResponse>;
   insertText: (text: string) => Promise<InsertionResult>;
   copyText: (text: string) => Promise<InsertionResult>;
+  readLocalRecording: (localPath: string) => Promise<Buffer>;
   deleteLocalRecording: (localPath: string) => Promise<void>;
   overlay: {
     showRecording: (input: { sessionId: string; context: DictationContext }) => void;
@@ -48,6 +49,7 @@ export interface DictationSessionControllerDeps {
   repositories: {
     history: {
       insertHistoryRow: (row: HistoryRowInput) => void;
+      getHistoryRow: (id: string) => HistoryRow | undefined;
       updateInsertionStatus: (id: string, insertionStatus: string) => void;
       pruneHistory: (retention: EchoSettings["historyRetention"]) => string[];
     };
@@ -74,7 +76,8 @@ export function createDictationSessionController(deps: DictationSessionControlle
     getAppState,
     startDictation,
     stopDictation,
-    cancelDictation
+    cancelDictation,
+    retryHistoryRow
   };
 
   function getAppState() {
@@ -235,6 +238,79 @@ export function createDictationSessionController(deps: DictationSessionControlle
     return getAppState();
   }
 
+  async function retryHistoryRow(id: string) {
+    const source = deps.repositories.history.getHistoryRow(id);
+    const sessionId = deps.createSessionId();
+
+    if (!source || !isRetryableHistoryRow(source)) {
+      const code = "history.retry_unavailable";
+      const message = "Retry is available only when a failed recording is still retained locally.";
+      state = { status: "error", sessionId, code, message };
+      deps.overlay.showError({ sessionId, code, message });
+      return getAppState();
+    }
+
+    const context = buildContextFromHistoryRow(source);
+    const audioFormat = audioFormatFromLocalPath(source.audio_local_path);
+    let audio: Buffer;
+    try {
+      audio = await deps.readLocalRecording(source.audio_local_path);
+    } catch {
+      const code = "history.retry_unavailable";
+      const message = "The retained recording could not be read. Try a new dictation.";
+      state = { status: "error", sessionId, code, message };
+      deps.overlay.showError({ sessionId, code, message });
+      return getAppState();
+    }
+    const recording: RecordedAudio = {
+      audio,
+      audioFormat,
+      durationMs: source.duration_ms,
+      localPath: null
+    };
+    const session: CurrentSession = {
+      sessionId,
+      context,
+      startedAt: deps.now()
+    };
+
+    state = { status: "processing", sessionId };
+    deps.overlay.showProcessing({ sessionId });
+
+    try {
+      const settings = deps.repositories.settings.getSettings();
+      const response = await deps.backend({
+        sessionId,
+        audio,
+        audioFormat,
+        durationMs: source.duration_ms,
+        language: source.language || settings.language,
+        context,
+        dictionary: getDictionaryTerms(),
+        preferences: getPreferences(settings)
+      });
+      const insertion = await deps.copyText(response.refined_text);
+
+      await storeHistory(settings, buildCompletedHistoryRow({ session, recording, response, insertion }));
+
+      state = { status: "complete", sessionId };
+      deps.overlay.showCopied({ sessionId });
+      return getAppState();
+    } catch (error) {
+      const backendError = normalizeBackendError(error);
+      const settings = deps.repositories.settings.getSettings();
+      await storeHistory(settings, buildErrorHistoryRow({ session, recording, error: backendError }));
+      state = {
+        status: "error",
+        sessionId,
+        code: backendError.code,
+        message: backendError.message
+      };
+      deps.overlay.showError(buildErrorOverlayInput(sessionId, backendError));
+      return getAppState();
+    }
+  }
+
   function requireCurrentSession() {
     if (!currentSession) {
       throw new Error("dictation.no_active_session");
@@ -321,6 +397,28 @@ function isSameInsertionTarget(startContext: DictationContext, currentContext: D
     startContext.app_name === currentContext.app_name &&
     currentContext.writable
   );
+}
+
+function isRetryableHistoryRow(row: HistoryRow): row is HistoryRow & { audio_local_path: string } {
+  return (row.status === "error" || row.status === "cancelled") && Boolean(row.audio_local_path);
+}
+
+function buildContextFromHistoryRow(row: HistoryRow): DictationContext {
+  return {
+    app_name: row.focused_app_name,
+    bundle_id: row.focused_app_bundle_id,
+    window_title: row.focused_app_window_title,
+    writable: true,
+    selection_present: false,
+    nearby_text: ""
+  };
+}
+
+function audioFormatFromLocalPath(localPath: string): AudioFormat {
+  if (localPath.toLowerCase().endsWith(".wav")) {
+    return "wav";
+  }
+  return "webm";
 }
 
 function getPreferences(settings: EchoSettings): DictationPreferences {

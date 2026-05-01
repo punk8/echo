@@ -50,6 +50,10 @@ export function createHistoryRepository(db: Database) {
         .all() as HistoryRow[];
     },
 
+    getHistoryRow(id: string): HistoryRow | undefined {
+      return db.prepare("SELECT * FROM dictation_history WHERE id = ?").get(id) as HistoryRow | undefined;
+    },
+
     updateInsertionStatus(id: string, insertionStatus: string) {
       db.prepare(
         "UPDATE dictation_history SET insertion_status = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?"

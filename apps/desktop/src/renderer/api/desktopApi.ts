@@ -16,6 +16,7 @@ export const desktopApi = {
   startDictation: () => window.echo.startDictation() as Promise<AppStateSnapshot>,
   stopDictation: () => window.echo.stopDictation() as Promise<AppStateSnapshot>,
   cancelDictation: () => window.echo.cancelDictation() as Promise<AppStateSnapshot>,
+  retryHistoryRow: (id: string) => window.echo.retryHistoryRow(id) as Promise<AppStateSnapshot>,
   getProviderStatus: () => window.echo.getProviderStatus() as Promise<ProviderStatus>,
   listHistory: () => window.echo.listHistory() as Promise<HistoryRow[]>,
   deleteHistoryRow: (id: string) => window.echo.deleteHistoryRow(id) as Promise<void>,
@@ -45,6 +46,7 @@ declare global {
       startDictation: () => Promise<unknown>;
       stopDictation: () => Promise<unknown>;
       cancelDictation: () => Promise<unknown>;
+      retryHistoryRow: (id: string) => Promise<unknown>;
       getProviderStatus: () => Promise<unknown>;
       listHistory: () => Promise<unknown>;
       deleteHistoryRow: (id: string) => Promise<unknown>;

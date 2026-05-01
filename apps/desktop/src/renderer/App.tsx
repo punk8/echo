@@ -164,7 +164,7 @@ export function App() {
           onRetentionChange={(historyRetention) => void saveSettings({ historyRetention })}
           onCopy={(text) => void navigator.clipboard.writeText(text)}
           onDelete={(id) => void deleteHistoryRow(id)}
-          onRetry={() => void toggleDictation()}
+          onRetry={(id) => void retryHistoryRow(id)}
           onClear={() => void clearHistory()}
         />
       ) : null}
@@ -278,6 +278,17 @@ export function App() {
   async function clearHistory() {
     await desktopApi.clearHistory();
     setHistory([]);
+  }
+
+  async function retryHistoryRow(id: string) {
+    try {
+      setError(null);
+      const next = await desktopApi.retryHistoryRow(id);
+      setSnapshot(next);
+      await refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "History retry failed.");
+    }
   }
 
   async function requestMicrophonePermission() {

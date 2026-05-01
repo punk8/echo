@@ -43,6 +43,7 @@ export interface RegisterIpcHandlersDeps {
     startDictation: () => Promise<AppStateSnapshot>;
     stopDictation: () => Promise<AppStateSnapshot>;
     cancelDictation: () => Promise<AppStateSnapshot>;
+    retryHistoryRow: (id: string) => Promise<AppStateSnapshot>;
     getProviderStatus: () => Promise<unknown>;
   };
   onSettingsSaved?: (settings: EchoSettings) => void;
@@ -53,6 +54,7 @@ export function registerIpcHandlers(deps: RegisterIpcHandlersDeps) {
   ipcMain.handle("echo:start-dictation", () => deps.dictation.startDictation());
   ipcMain.handle("echo:stop-dictation", () => deps.dictation.stopDictation());
   ipcMain.handle("echo:cancel-dictation", () => deps.dictation.cancelDictation());
+  ipcMain.handle("echo:retry-history-row", (_event, id: string) => deps.dictation.retryHistoryRow(id));
   ipcMain.handle("echo:get-provider-status", () => deps.dictation.getProviderStatus());
   ipcMain.handle("echo:capture-context", () => deps.platform.captureContext());
   ipcMain.handle("echo:get-permission-status", () => deps.platform.getPermissionStatus());

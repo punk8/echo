@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { BackendDictationError } from "./backendClient";
 import { createDictationSessionController } from "./sessionController";
 import type { PermissionStatusSnapshot } from "../platform/permissions";
+import type { HistoryRow } from "../storage/historyRepository";
 import type { EchoSettings } from "../storage/settingsRepository";
 
 const context = {
@@ -63,6 +64,7 @@ function createDeps() {
       }),
       insertText: vi.fn().mockResolvedValue({ method: "clipboard_paste" as const, status: "inserted" as const }),
       copyText: vi.fn().mockResolvedValue({ method: "clipboard" as const, status: "copied" as const }),
+      readLocalRecording: vi.fn().mockResolvedValue(Buffer.from("retry-audio")),
       deleteLocalRecording: vi.fn().mockResolvedValue(undefined),
       overlay: {
         showRecording: vi.fn(),
@@ -77,6 +79,7 @@ function createDeps() {
       repositories: {
         history: {
           insertHistoryRow: vi.fn((row: unknown) => historyRows.push(row)),
+          getHistoryRow: vi.fn<() => HistoryRow | undefined>(() => undefined),
           updateInsertionStatus: vi.fn(),
           pruneHistory: vi.fn<() => string[]>(() => [])
         },
@@ -393,5 +396,135 @@ describe("createDictationSessionController", () => {
         })
       })
     );
+  });
+
+  it("retries a failed history row from retained audio and copies the refined result", async () => {
+    const { deps, historyRows } = createDeps();
+    deps.repositories.history.getHistoryRow.mockReturnValue({
+      id: "failed-1",
+      created_at: "2026-05-02T00:00:00.000Z",
+      updated_at: "2026-05-02T00:00:00.000Z",
+      status: "error",
+      raw_text: "raw transcript",
+      refined_text: "",
+      audio_local_path: "/tmp/failed-1.webm",
+      duration_ms: 1800,
+      output_length: 14,
+      language: "en",
+      focused_app_name: "TextEdit",
+      focused_app_bundle_id: "com.apple.TextEdit",
+      focused_app_window_title: "Untitled",
+      insertion_method: "none",
+      insertion_status: "not_inserted",
+      provider_asr: "unavailable",
+      provider_llm: "unavailable",
+      error_code: "server.refine_failed",
+      timing_json: "{}"
+    });
+    const controller = createDictationSessionController(deps);
+
+    const snapshot = await controller.retryHistoryRow("failed-1");
+
+    expect(deps.readLocalRecording).toHaveBeenCalledWith("/tmp/failed-1.webm");
+    expect(deps.backend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId: "session-1",
+        audio: Buffer.from("retry-audio"),
+        audioFormat: "webm",
+        durationMs: 1800,
+        context: expect.objectContaining({
+          app_name: "TextEdit",
+          bundle_id: "com.apple.TextEdit"
+        })
+      })
+    );
+    expect(deps.insertText).not.toHaveBeenCalled();
+    expect(deps.copyText).toHaveBeenCalledWith("Tomorrow at three.");
+    expect(deps.overlay.showCopied).toHaveBeenCalledWith({ sessionId: "session-1" });
+    expect(historyRows[0]).toMatchObject({
+      id: "session-1",
+      status: "completed",
+      audio_local_path: null,
+      insertion_method: "clipboard",
+      insertion_status: "copied"
+    });
+    expect(snapshot.state).toEqual({ status: "complete", sessionId: "session-1" });
+  });
+
+  it("does not try to delete a missing retry recording path when retention is never", async () => {
+    const { deps, historyRows } = createDeps();
+    deps.repositories.settings.getSettings.mockReturnValue({
+      ...defaultSettings,
+      historyRetention: "never"
+    });
+    deps.repositories.history.getHistoryRow.mockReturnValue({
+      id: "failed-1",
+      created_at: "2026-05-02T00:00:00.000Z",
+      updated_at: "2026-05-02T00:00:00.000Z",
+      status: "error",
+      raw_text: "raw transcript",
+      refined_text: "",
+      audio_local_path: "/tmp/failed-1.webm",
+      duration_ms: 1800,
+      output_length: 14,
+      language: "en",
+      focused_app_name: "TextEdit",
+      focused_app_bundle_id: "com.apple.TextEdit",
+      focused_app_window_title: "Untitled",
+      insertion_method: "none",
+      insertion_status: "not_inserted",
+      provider_asr: "unavailable",
+      provider_llm: "unavailable",
+      error_code: "server.refine_failed",
+      timing_json: "{}"
+    });
+    const controller = createDictationSessionController(deps);
+
+    await controller.retryHistoryRow("failed-1");
+
+    expect(historyRows).toEqual([]);
+    expect(deps.deleteLocalRecording).not.toHaveBeenCalled();
+  });
+
+  it("shows a retry unavailable error when the retained recording file cannot be read", async () => {
+    const { deps } = createDeps();
+    deps.readLocalRecording.mockRejectedValueOnce(new Error("ENOENT"));
+    deps.repositories.history.getHistoryRow.mockReturnValue({
+      id: "failed-1",
+      created_at: "2026-05-02T00:00:00.000Z",
+      updated_at: "2026-05-02T00:00:00.000Z",
+      status: "error",
+      raw_text: "raw transcript",
+      refined_text: "",
+      audio_local_path: "/tmp/missing.webm",
+      duration_ms: 1800,
+      output_length: 14,
+      language: "en",
+      focused_app_name: "TextEdit",
+      focused_app_bundle_id: "com.apple.TextEdit",
+      focused_app_window_title: "Untitled",
+      insertion_method: "none",
+      insertion_status: "not_inserted",
+      provider_asr: "unavailable",
+      provider_llm: "unavailable",
+      error_code: "server.refine_failed",
+      timing_json: "{}"
+    });
+    const controller = createDictationSessionController(deps);
+
+    const snapshot = await controller.retryHistoryRow("failed-1");
+
+    expect(deps.backend).not.toHaveBeenCalled();
+    expect(deps.overlay.showError).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      code: "history.retry_unavailable",
+      message: "The retained recording could not be read. Try a new dictation."
+    });
+    expect(snapshot.state).toEqual({
+      status: "error",
+      sessionId: "session-1",
+      code: "history.retry_unavailable",
+      message: "The retained recording could not be read. Try a new dictation."
+    });
   });
 });

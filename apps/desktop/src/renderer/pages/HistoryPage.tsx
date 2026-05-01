@@ -56,7 +56,12 @@ export function HistoryPage({
               </div>
               <span className={`status-chip ${row.insertion_status}`}>{row.insertion_status}</span>
               <div className="row-actions">
-                <button type="button" onClick={() => onRetry(row.id)}>
+                <button
+                  type="button"
+                  disabled={!canRetryHistoryRow(row)}
+                  title={canRetryHistoryRow(row) ? "Retry retained recording" : "Retry unavailable without a failed retained recording"}
+                  onClick={() => onRetry(row.id)}
+                >
                   Retry
                 </button>
                 <button type="button" onClick={() => onCopy(row.refined_text || row.raw_text)}>
@@ -72,6 +77,10 @@ export function HistoryPage({
       </section>
     </section>
   );
+}
+
+export function canRetryHistoryRow(row: HistoryRow) {
+  return (row.status === "error" || row.status === "cancelled") && Boolean(row.audio_local_path);
 }
 
 function formatDate(value: string) {
