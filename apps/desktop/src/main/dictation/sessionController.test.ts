@@ -528,6 +528,27 @@ describe("createDictationSessionController", () => {
     });
   });
 
+  it("copies refined text without pasting when the current target has selected text", async () => {
+    const { deps, historyRows } = createDeps();
+    deps.captureContext
+      .mockResolvedValueOnce(context)
+      .mockResolvedValueOnce({
+        ...context,
+        selection_present: true
+      });
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+    await controller.stopDictation();
+
+    expect(deps.insertText).not.toHaveBeenCalled();
+    expect(deps.copyText).toHaveBeenCalledWith("Tomorrow at three.");
+    expect(historyRows[0]).toMatchObject({
+      insertion_method: "clipboard",
+      insertion_status: "copied"
+    });
+  });
+
   it("falls back to copying refined text when insertion throws", async () => {
     const { deps, historyRows } = createDeps();
     deps.insertText.mockRejectedValueOnce(new Error("insert failed"));

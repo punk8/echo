@@ -508,6 +508,7 @@ function isSameInsertionTarget(startContext: DictationContext, currentContext: D
     startContext.app_name === currentContext.app_name &&
     startContext.window_title === currentContext.window_title &&
     startContext.focused_role === currentContext.focused_role &&
+    !currentContext.selection_present &&
     currentContext.writable
   );
 }
