@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { readFile, rm } from "node:fs/promises";
-import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { app, BrowserWindow, ipcMain, screen, shell } from "electron";
 import { processDictation } from "./dictation/backendClient";
 import { ensureLocalApiRuntime, type LocalApiRuntime } from "./dictation/localApiRuntime";
 import { checkProviderStatus } from "./dictation/providerStatus";
@@ -22,6 +22,7 @@ import { openEchoDatabase } from "./storage/database";
 import { createDictionaryRepository } from "./storage/dictionaryRepository";
 import { createHistoryRepository } from "./storage/historyRepository";
 import { createSettingsRepository } from "./storage/settingsRepository";
+import { computeBottomOverlayBounds } from "./windowPlacement";
 import { resolvePreloadPath, resolveRendererIndexPath } from "./windowPaths";
 
 let hubWindow: BrowserWindow | undefined;
@@ -68,6 +69,14 @@ if (!gotLock) {
       recordingsDir: getUserDataPath(app.getPath("userData"), "recordings")
     });
     const overlay = overlayWindow;
+    const showOverlay = (payload: Record<string, unknown>, autoHideMs?: number) => {
+      positionOverlayWindow(overlay);
+      overlay.showInactive();
+      overlay.webContents.send("echo:overlay-state", payload);
+      if (autoHideMs) {
+        setTimeout(() => overlay.hide(), autoHideMs);
+      }
+    };
     const controller = createDictationSessionController({
       createSessionId: randomUUID,
       now: () => new Date().toISOString(),
@@ -84,29 +93,22 @@ if (!gotLock) {
       deleteLocalRecording: (localPath) => rm(localPath, { force: true }),
       overlay: {
         showRecording: ({ sessionId }) => {
-          overlay.showInactive();
-          overlay.webContents.send("echo:overlay-state", { status: "recording", sessionId });
+          showOverlay({ status: "recording", sessionId });
         },
         showFinalizing: ({ sessionId }) => {
-          overlay.showInactive();
-          overlay.webContents.send("echo:overlay-state", { status: "finalizing", sessionId });
+          showOverlay({ status: "finalizing", sessionId });
         },
         showProcessing: ({ sessionId }) => {
-          overlay.showInactive();
-          overlay.webContents.send("echo:overlay-state", { status: "processing", sessionId });
+          showOverlay({ status: "processing", sessionId });
         },
         showInserting: ({ sessionId }) => {
-          overlay.showInactive();
-          overlay.webContents.send("echo:overlay-state", { status: "inserting", sessionId });
+          showOverlay({ status: "inserting", sessionId });
         },
         showCopied: ({ sessionId }) => {
-          overlay.showInactive();
-          overlay.webContents.send("echo:overlay-state", { status: "copied", sessionId });
-          setTimeout(() => overlay.hide(), 3000);
+          showOverlay({ status: "copied", sessionId }, 3000);
         },
         showError: ({ sessionId, code, message, recoverableText, retryHistoryId }) => {
-          overlay.showInactive();
-          overlay.webContents.send("echo:overlay-state", {
+          showOverlay({
             status: "error",
             sessionId,
             code,
@@ -116,8 +118,7 @@ if (!gotLock) {
           });
         },
         showComplete: ({ sessionId }) => {
-          overlay.webContents.send("echo:overlay-state", { status: "complete", sessionId });
-          setTimeout(() => overlay.hide(), 1200);
+          showOverlay({ status: "complete", sessionId }, 1200);
         },
         hide: () => overlay.hide()
       },
@@ -246,4 +247,15 @@ function createWindows() {
   }
 
   return { hubWindow: hub, overlayWindow: overlay };
+}
+
+function positionOverlayWindow(overlay: BrowserWindow) {
+  const cursorPoint = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint(cursorPoint);
+  overlay.setBounds(
+    computeBottomOverlayBounds({
+      displayWorkArea: display.workArea,
+      overlaySize: overlay.getBounds()
+    })
+  );
 }
