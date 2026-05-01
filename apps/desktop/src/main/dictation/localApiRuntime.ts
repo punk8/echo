@@ -13,6 +13,7 @@ export interface EnsureLocalApiRuntimeInput {
   env?: NodeJS.ProcessEnv;
   cwd?: string;
   workspaceRoot?: string;
+  fileExists?: (filePath: string) => boolean;
   fetchImpl?: (url: string) => Promise<{ ok: boolean }>;
   spawn?: (
     command: string,
@@ -34,6 +35,7 @@ const defaultHost = "127.0.0.1";
 const defaultPort = "43110";
 const healthRetryCount = 12;
 const healthRetryIntervalMs = 250;
+const builtApiEntry = "services/api/dist/services/api/src/index.js";
 
 export async function ensureLocalApiRuntime(input: EnsureLocalApiRuntimeInput = {}): Promise<LocalApiRuntime> {
   const env = input.env ?? process.env;
@@ -62,8 +64,9 @@ export async function ensureLocalApiRuntime(input: EnsureLocalApiRuntimeInput = 
 
   const workspaceRoot = input.workspaceRoot ?? findWorkspaceRoot(input.cwd ?? process.cwd());
   const spawn = input.spawn ?? spawnChild;
+  const localApiCommand = resolveLocalApiCommand(workspaceRoot, input.fileExists ?? existsSync);
   let startupError: string | undefined;
-  const child = spawn("pnpm", ["--filter", "@echo/api", "exec", "tsx", "src/index.ts"], {
+  const child = spawn(localApiCommand.command, localApiCommand.args, {
     cwd: workspaceRoot,
     env: {
       ...process.env,
@@ -133,6 +136,20 @@ function findWorkspaceRoot(start: string) {
     }
     current = parent;
   }
+}
+
+function resolveLocalApiCommand(workspaceRoot: string, fileExists: (filePath: string) => boolean) {
+  if (fileExists(path.join(workspaceRoot, builtApiEntry))) {
+    return {
+      command: "node",
+      args: [builtApiEntry]
+    };
+  }
+
+  return {
+    command: "pnpm",
+    args: ["--filter", "@echo/api", "exec", "tsx", "src/index.ts"]
+  };
 }
 
 function normalizeBlank(value: string | undefined) {

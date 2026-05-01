@@ -175,6 +175,7 @@ For local desktop use, the Electron main process should manage that local API se
 - If `API_BASE_URL` is set, Echo treats it as a user-managed or hosted backend and does not spawn a local API child process.
 - If `API_BASE_URL` is unset, Echo starts the local API as a child process with the same provider environment variables as the desktop process.
 - The desktop app checks `/health` before starting a child process, so an already-running local API on the configured host/port is reused.
+- The desktop app should start the compiled API entry when build output exists, and fall back to the TypeScript development entry only when no compiled entry is available.
 - The child process is terminated when the desktop app exits.
 - Startup failures must be surfaced as provider status/config errors without exposing secrets in the UI or logs.
 

@@ -54,6 +54,7 @@ describe("ensureLocalApiRuntime", () => {
       workspaceRoot: "/workspace/echo",
       spawn,
       fetchImpl,
+      fileExists: vi.fn(() => false),
       sleep: vi.fn().mockResolvedValue(undefined)
     });
 
@@ -77,6 +78,33 @@ describe("ensureLocalApiRuntime", () => {
     expect(child.kill).toHaveBeenCalled();
   });
 
+  it("prefers the compiled API entry when build output exists", async () => {
+    const child = { kill: vi.fn(), on: vi.fn() };
+    const spawn = vi.fn(() => child);
+    const fetchImpl = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("ECONNREFUSED"))
+      .mockResolvedValueOnce({ ok: true });
+
+    await ensureLocalApiRuntime({
+      env: { API_HOST: "127.0.0.1", API_PORT: "43110" },
+      cwd: "/workspace/echo/apps/desktop",
+      workspaceRoot: "/workspace/echo",
+      spawn,
+      fetchImpl,
+      fileExists: vi.fn(() => true),
+      sleep: vi.fn().mockResolvedValue(undefined)
+    });
+
+    expect(spawn).toHaveBeenCalledWith(
+      "node",
+      ["services/api/dist/services/api/src/index.js"],
+      expect.objectContaining({
+        cwd: "/workspace/echo"
+      })
+    );
+  });
+
   it("captures local API startup configuration errors", async () => {
     const child = {
       kill: vi.fn(),
@@ -98,6 +126,7 @@ describe("ensureLocalApiRuntime", () => {
       workspaceRoot: "/workspace/echo",
       spawn,
       fetchImpl,
+      fileExists: vi.fn(() => false),
       sleep: vi.fn().mockResolvedValue(undefined)
     });
 
