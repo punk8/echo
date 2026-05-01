@@ -5,12 +5,12 @@
   "type": "module",
   "packageManager": "pnpm@10.13.1",
   "scripts": {
-    "dev": "pnpm --parallel --filter @echo/api --filter @echo/desktop dev",
-    "dev:api": "pnpm --filter @echo/api dev",
-    "dev:desktop": "pnpm --filter @echo/desktop dev",
+    "dev": "pnpm --filter @echo/shared build && pnpm --parallel --filter @echo/api --filter @echo/desktop dev",
+    "dev:api": "pnpm --filter @echo/shared build && pnpm --filter @echo/api dev",
+    "dev:desktop": "pnpm --filter @echo/shared build && pnpm --filter @echo/desktop dev",
     "build": "pnpm --recursive build",
     "typecheck": "pnpm --recursive typecheck",
-    "test": "vitest run",
+    "test": "pnpm --filter @echo/desktop rebuild:native:node && vitest run",
     "test:watch": "vitest",
     "lint": "pnpm typecheck",
     "verify": "pnpm typecheck && pnpm test && pnpm build"

@@ -5,10 +5,12 @@
   "type": "module",
   "main": "out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "pnpm rebuild:native && electron-vite dev",
     "build": "electron-vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "preview": "electron-vite preview"
+    "preview": "pnpm rebuild:native && electron-vite preview",
+    "rebuild:native": "electron-rebuild -f -w better-sqlite3",
+    "rebuild:native:node": "node -e \"const { dirname } = require('node:path'); const { spawnSync } = require('node:child_process'); const dir = dirname(require.resolve('better-sqlite3/package.json')); const result = spawnSync('npm', ['run', 'install'], { cwd: dir, stdio: 'inherit' }); process.exit(result.status ?? 1);\""
   },
   "dependencies": {
     "@echo/shared": "workspace:*",
@@ -20,6 +22,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.4",
     "@testing-library/react": "^16.2.0",
     "@types/better-sqlite3": "^7.6.0",
     "@types/react": "^19.0.0",

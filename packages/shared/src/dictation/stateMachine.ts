@@ -1,4 +1,4 @@
-import type { DictationErrorCode } from "./errors";
+import type { DictationErrorCode } from "./errors.js";
 
 export type DictationState =
   | { status: "idle" }

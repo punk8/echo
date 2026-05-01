@@ -1,3 +1,3 @@
-export * from "./dictation/contracts";
-export * from "./dictation/errors";
-export * from "./dictation/stateMachine";
+export * from "./dictation/contracts.js";
+export * from "./dictation/errors.js";
+export * from "./dictation/stateMachine.js";

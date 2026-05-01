@@ -29,6 +29,12 @@ Or run both:
 pnpm dev
 ```
 
+The desktop dev and preview scripts rebuild `better-sqlite3` for Electron before launching. If you later need to run Node/Vitest storage tests in the same checkout, rebuild native modules for Node again:
+
+```bash
+pnpm --filter @echo/desktop rebuild:native:node
+```
+
 The desktop app calls `http://127.0.0.1:43110` by default. Override with `API_BASE_URL` when needed.
 
 ## Verification
