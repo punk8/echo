@@ -453,6 +453,24 @@ select {
   display: block;
 }
 
+.recoverable-transcript {
+  max-width: 180px;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.recoverable-transcript strong,
+.recoverable-transcript span {
+  display: block;
+}
+
+.recoverable-transcript span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #4d5c66;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

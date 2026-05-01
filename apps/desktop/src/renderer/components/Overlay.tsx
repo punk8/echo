@@ -14,6 +14,7 @@ export type OverlayState =
   | {
       status: "error";
       message: string;
+      recoverableText?: string;
       onRetry: () => void;
       onCopy: () => void;
       onDismiss: () => void;
@@ -54,6 +55,12 @@ export function Overlay({ state }: { state: OverlayState }) {
       {state.status === "error" ? (
         <>
           <OverlayMessage title="Could not finish" detail={state.message} />
+          {state.recoverableText ? (
+            <div className="recoverable-transcript">
+              <strong>Unrefined transcript</strong>
+              <span>{state.recoverableText}</span>
+            </div>
+          ) : null}
           <div className="overlay-actions">
             <button type="button" className="ghost-button" onClick={state.onRetry}>
               Retry

@@ -24,6 +24,7 @@ describe("buildOverlayState", () => {
       throw new Error("expected error overlay state");
     }
 
+    expect(overlayState.recoverableText).toBe("raw transcript");
     overlayState.onCopy();
 
     expect(writeClipboard).toHaveBeenCalledWith("raw transcript");

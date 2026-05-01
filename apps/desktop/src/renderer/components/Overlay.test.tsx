@@ -51,4 +51,22 @@ describe("Overlay", () => {
     expect(markup).toContain("Copy");
     expect(markup).toContain("Dismiss");
   });
+
+  it("labels recoverable raw transcript text as unrefined", () => {
+    const markup = renderToStaticMarkup(
+      <Overlay
+        state={{
+          status: "error",
+          message: "Dictation refinement failed.",
+          recoverableText: "um tomorrow at seven no actually three",
+          onRetry: vi.fn(),
+          onCopy: vi.fn(),
+          onDismiss: vi.fn()
+        }}
+      />
+    );
+
+    expect(markup).toContain("Unrefined transcript");
+    expect(markup).toContain("um tomorrow at seven");
+  });
 });

@@ -341,6 +341,7 @@ export function buildOverlayState(
     return {
       status: "error",
       message,
+      ...(overlayPayload.recoverableText ? { recoverableText: overlayPayload.recoverableText } : {}),
       onRetry: onFinish,
       onCopy: () => void writeClipboard(copyText),
       onDismiss
