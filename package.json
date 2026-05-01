@@ -1,0 +1,23 @@
+{
+  "name": "echo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.13.1",
+  "scripts": {
+    "dev": "pnpm --parallel dev",
+    "dev:api": "pnpm --filter @echo/api dev",
+    "dev:desktop": "pnpm --filter @echo/desktop dev",
+    "build": "pnpm --recursive build",
+    "typecheck": "pnpm --recursive typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "pnpm typecheck",
+    "verify": "pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}
