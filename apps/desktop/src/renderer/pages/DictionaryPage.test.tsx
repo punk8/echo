@@ -15,7 +15,9 @@ describe("DictionaryPage", () => {
             aliases: ["echo app"],
             case_sensitive: true,
             source: "manual",
-            language: "en"
+            language: "en",
+            pronunciation_hint: "EH-koh",
+            capitalization: "Echo"
           }
         ]}
         onAdd={vi.fn()}
@@ -25,6 +27,9 @@ describe("DictionaryPage", () => {
     );
 
     expect(markup).toContain("Aliases");
+    expect(markup).toContain("Pronunciation");
+    expect(markup).toContain("Capitalization");
+    expect(markup).toContain("EH-koh");
     expect(markup).toContain("Edit");
   });
 });

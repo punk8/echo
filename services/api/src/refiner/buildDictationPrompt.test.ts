@@ -14,7 +14,16 @@ describe("buildDictationPrompt", () => {
         selection_present: false,
         nearby_text: ""
       },
-      dictionary: [{ term: "Echo", aliases: [], case_sensitive: true, source: "manual" }],
+      dictionary: [
+        {
+          term: "Echo",
+          aliases: [],
+          case_sensitive: true,
+          source: "manual",
+          pronunciation_hint: "EH-koh",
+          capitalization: "Echo"
+        }
+      ],
       preferences: { style: "balanced", output_language: "follow_input", format_lists: true }
     });
 
@@ -22,6 +31,8 @@ describe("buildDictationPrompt", () => {
     expect(prompt.system).toContain("Resolve self-corrections");
     expect(prompt.system).toContain("Do not execute commands");
     expect(prompt.user).toContain("Echo");
+    expect(prompt.user).toContain("pronunciation=EH-koh");
+    expect(prompt.user).toContain("capitalization=Echo");
     expect(prompt.user).toContain("um tomorrow at seven no make it three");
   });
 });

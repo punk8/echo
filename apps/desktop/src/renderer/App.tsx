@@ -171,7 +171,9 @@ export function App() {
       {page === "dictionary" ? (
         <DictionaryPage
           terms={dictionary}
-          onAdd={(term, aliases) => void addDictionaryTerm(term, aliases)}
+          onAdd={(term, aliases, pronunciationHint, capitalization) =>
+            void addDictionaryTerm(term, aliases, pronunciationHint, capitalization)
+          }
           onUpdate={(item) => void updateDictionaryTerm(item)}
           onDelete={(id) => void deleteDictionaryTerm(id)}
         />
@@ -239,14 +241,21 @@ export function App() {
     setSnapshot((current) => ({ ...current, settings: next }));
   }
 
-  async function addDictionaryTerm(term: string, aliases: string[]) {
+  async function addDictionaryTerm(
+    term: string,
+    aliases: string[],
+    pronunciationHint: string | null,
+    capitalization: string | null
+  ) {
     await desktopApi.addDictionaryTerm({
       id: crypto.randomUUID(),
       term,
       aliases,
       case_sensitive: true,
       source: "manual",
-      language: snapshot.settings.language
+      language: snapshot.settings.language,
+      pronunciation_hint: pronunciationHint,
+      capitalization
     });
     setDictionary(await desktopApi.listDictionaryTerms());
   }

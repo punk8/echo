@@ -16,7 +16,9 @@ export interface DictationPrompt {
 export function buildDictationPrompt(input: BuildDictationPromptInput): DictationPrompt {
   const dictionaryLines = input.dictionary.map((term) => {
     const aliases = term.aliases.length > 0 ? ` aliases=${term.aliases.join(", ")}` : "";
-    return `- ${term.term}${aliases}; source=${term.source}; case_sensitive=${term.case_sensitive}`;
+    const pronunciation = term.pronunciation_hint ? ` pronunciation=${term.pronunciation_hint}` : "";
+    const capitalization = term.capitalization ? ` capitalization=${term.capitalization}` : "";
+    return `- ${term.term}${aliases}${pronunciation}${capitalization}; source=${term.source}; case_sensitive=${term.case_sensitive}`;
   });
 
   return {

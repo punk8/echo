@@ -14,7 +14,9 @@ describe("dictionaryRepository", () => {
       aliases: ["echo app"],
       case_sensitive: true,
       source: "manual",
-      language: "en"
+      language: "en",
+      pronunciation_hint: "EH-koh",
+      capitalization: "Echo"
     });
 
     const rows = repo.searchDictionaryTerms("ech");
@@ -22,6 +24,8 @@ describe("dictionaryRepository", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]?.term).toBe("Echo");
     expect(rows[0]?.aliases).toEqual(["echo app"]);
+    expect(rows[0]?.pronunciation_hint).toBe("EH-koh");
+    expect(rows[0]?.capitalization).toBe("Echo");
   });
 
   it("updates existing terms", () => {
@@ -32,7 +36,9 @@ describe("dictionaryRepository", () => {
       aliases: [],
       case_sensitive: true,
       source: "manual",
-      language: "en"
+      language: "en",
+      pronunciation_hint: null,
+      capitalization: null
     });
 
     repo.updateDictionaryTerm({
@@ -41,14 +47,18 @@ describe("dictionaryRepository", () => {
       aliases: ["echo app"],
       case_sensitive: false,
       source: "manual",
-      language: "en"
+      language: "en",
+      pronunciation_hint: "EH-koh dictation",
+      capitalization: "Echo Dictation"
     });
 
     expect(repo.listDictionaryTerms()[0]).toMatchObject({
       id: "term-1",
       term: "Echo Dictation",
       aliases: ["echo app"],
-      case_sensitive: false
+      case_sensitive: false,
+      pronunciation_hint: "EH-koh dictation",
+      capitalization: "Echo Dictation"
     });
   });
 });

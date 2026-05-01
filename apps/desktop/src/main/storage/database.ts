@@ -44,7 +44,18 @@ function migrate(db: Database) {
       aliases_json TEXT NOT NULL,
       case_sensitive INTEGER NOT NULL,
       source TEXT NOT NULL,
-      language TEXT NOT NULL
+      language TEXT NOT NULL,
+      pronunciation_hint TEXT,
+      capitalization TEXT
     );
   `);
+  addColumnIfMissing(db, "dictionary_terms", "pronunciation_hint", "TEXT");
+  addColumnIfMissing(db, "dictionary_terms", "capitalization", "TEXT");
+}
+
+function addColumnIfMissing(db: Database, tableName: string, columnName: string, columnDefinition: string) {
+  const columns = db.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{ name: string }>;
+  if (!columns.some((column) => column.name === columnName)) {
+    db.prepare(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition}`).run();
+  }
 }

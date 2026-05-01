@@ -215,7 +215,9 @@ export function createDictationSessionController(deps: DictationSessionControlle
       term: term.term,
       aliases: term.aliases,
       case_sensitive: term.case_sensitive,
-      source: term.source
+      source: term.source,
+      ...(term.pronunciation_hint ? { pronunciation_hint: term.pronunciation_hint } : {}),
+      ...(term.capitalization ? { capitalization: term.capitalization } : {})
     }));
   }
 

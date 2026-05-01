@@ -18,7 +18,9 @@ export const DictionaryTermSchema = z.object({
   term: z.string().min(1),
   aliases: z.array(z.string()),
   case_sensitive: z.boolean(),
-  source: z.enum(["manual", "learned"])
+  source: z.enum(["manual", "learned"]),
+  pronunciation_hint: z.string().optional(),
+  capitalization: z.string().optional()
 });
 
 export const DictationPreferencesSchema = z.object({

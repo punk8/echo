@@ -7,6 +7,8 @@ export interface DictionaryTermInput {
   case_sensitive: boolean;
   source: "manual" | "learned";
   language: string;
+  pronunciation_hint?: string | null;
+  capitalization?: string | null;
 }
 
 export interface DictionaryTermRow extends DictionaryTermInput {
@@ -23,6 +25,8 @@ interface DictionaryTermRecord {
   case_sensitive: 0 | 1;
   source: "manual" | "learned";
   language: string;
+  pronunciation_hint: string | null;
+  capitalization: string | null;
 }
 
 export function createDictionaryRepository(db: Database) {
@@ -30,14 +34,14 @@ export function createDictionaryRepository(db: Database) {
     addDictionaryTerm(term: DictionaryTermInput) {
       db.prepare(
         `
-          INSERT INTO dictionary_terms (id, term, aliases_json, case_sensitive, source, language)
-          VALUES (@id, @term, @aliases_json, @case_sensitive, @source, @language)
+          INSERT INTO dictionary_terms (
+            id, term, aliases_json, case_sensitive, source, language, pronunciation_hint, capitalization
+          )
+          VALUES (
+            @id, @term, @aliases_json, @case_sensitive, @source, @language, @pronunciation_hint, @capitalization
+          )
         `
-      ).run({
-        ...term,
-        aliases_json: JSON.stringify(term.aliases),
-        case_sensitive: term.case_sensitive ? 1 : 0
-      });
+      ).run(toStatementInput(term));
     },
 
     updateDictionaryTerm(term: DictionaryTermInput) {
@@ -49,14 +53,12 @@ export function createDictionaryRepository(db: Database) {
               case_sensitive = @case_sensitive,
               source = @source,
               language = @language,
+              pronunciation_hint = @pronunciation_hint,
+              capitalization = @capitalization,
               updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
           WHERE id = @id
         `
-      ).run({
-        ...term,
-        aliases_json: JSON.stringify(term.aliases),
-        case_sensitive: term.case_sensitive ? 1 : 0
-      });
+      ).run(toStatementInput(term));
     },
 
     listDictionaryTerms(): DictionaryTermRow[] {
@@ -86,6 +88,23 @@ function mapRecord(record: DictionaryTermRecord): DictionaryTermRow {
     aliases: JSON.parse(record.aliases_json) as string[],
     case_sensitive: record.case_sensitive === 1,
     source: record.source,
-    language: record.language
+    language: record.language,
+    pronunciation_hint: record.pronunciation_hint,
+    capitalization: record.capitalization
   };
+}
+
+function toStatementInput(term: DictionaryTermInput) {
+  return {
+    ...term,
+    aliases_json: JSON.stringify(term.aliases),
+    case_sensitive: term.case_sensitive ? 1 : 0,
+    pronunciation_hint: normalizeNullableText(term.pronunciation_hint),
+    capitalization: normalizeNullableText(term.capitalization)
+  };
+}
+
+function normalizeNullableText(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
 }

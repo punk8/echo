@@ -21,7 +21,9 @@ describe("dictation contracts", () => {
           term: "Echo",
           aliases: [],
           case_sensitive: true,
-          source: "manual"
+          source: "manual",
+          pronunciation_hint: "EH-koh",
+          capitalization: "Echo"
         }
       ],
       preferences: {
@@ -33,6 +35,8 @@ describe("dictation contracts", () => {
 
     expect(result.audio_format).toBe("webm");
     expect(result.dictionary[0]?.term).toBe("Echo");
+    expect(result.dictionary[0]?.pronunciation_hint).toBe("EH-koh");
+    expect(result.dictionary[0]?.capitalization).toBe("Echo");
   });
 
   it("rejects unsupported audio formats before provider calls", () => {
