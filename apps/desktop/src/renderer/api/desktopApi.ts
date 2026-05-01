@@ -2,6 +2,7 @@ import type { DictationState } from "@echo/shared";
 import type { DictionaryTermInput, DictionaryTermRow } from "../../main/storage/dictionaryRepository";
 import type { HistoryRow } from "../../main/storage/historyRepository";
 import type { EchoSettings } from "../../main/storage/settingsRepository";
+import type { AudioRecorderResult } from "../recording/audioRecorder";
 
 export interface AppStateSnapshot {
   state: DictationState;
@@ -21,7 +22,11 @@ export const desktopApi = {
   getSettings: () => window.echo.getSettings() as Promise<EchoSettings>,
   saveSettings: (settings: Partial<EchoSettings>) => window.echo.saveSettings(settings) as Promise<EchoSettings>,
   onShortcutToggle: (callback: () => void) => window.echo.onShortcutToggle(callback),
-  onShortcutError: (callback: (payload: unknown) => void) => window.echo.onShortcutError(callback)
+  onShortcutError: (callback: (payload: unknown) => void) => window.echo.onShortcutError(callback),
+  onRecorderStart: (callback: (payload: { sessionId: string }) => Promise<void>) => window.echo.onRecorderStart(callback),
+  onRecorderStop: (callback: (payload: { sessionId: string }) => Promise<AudioRecorderResult>) => window.echo.onRecorderStop(callback),
+  onRecorderCancel: (callback: (payload: { sessionId: string }) => void) => window.echo.onRecorderCancel(callback),
+  onOverlayState: (callback: (payload: unknown) => void) => window.echo.onOverlayState(callback)
 };
 
 declare global {
@@ -40,6 +45,10 @@ declare global {
       saveSettings: (settings: unknown) => Promise<unknown>;
       onShortcutToggle: (callback: () => void) => () => void;
       onShortcutError: (callback: (payload: unknown) => void) => () => void;
+      onRecorderStart: (callback: (payload: { sessionId: string }) => Promise<void>) => () => void;
+      onRecorderStop: (callback: (payload: { sessionId: string }) => Promise<AudioRecorderResult>) => () => void;
+      onRecorderCancel: (callback: (payload: { sessionId: string }) => void) => () => void;
+      onOverlayState: (callback: (payload: unknown) => void) => () => void;
     };
   }
 }

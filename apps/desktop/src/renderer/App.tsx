@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { DictationState } from "@echo/shared";
 import { desktopApi, type AppStateSnapshot } from "./api/desktopApi";
 import { HubLayout, type HubPage } from "./components/HubLayout";
@@ -10,6 +10,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 import type { DictionaryTermRow } from "../main/storage/dictionaryRepository";
 import type { HistoryRow } from "../main/storage/historyRepository";
 import type { EchoSettings } from "../main/storage/settingsRepository";
+import { createAudioRecorder, type AudioRecorder } from "./recording/audioRecorder";
 import "./styles.css";
 
 const defaultSettings: EchoSettings = {
@@ -24,17 +25,84 @@ export function App() {
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [dictionary, setDictionary] = useState<DictionaryTermRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [overlayPayload, setOverlayPayload] = useState<MainOverlayPayload | null>(null);
+  const [levelSamples, setLevelSamples] = useState<number[]>([0.16, 0.22, 0.18, 0.28]);
+  const [recordingStartedAt, setRecordingStartedAt] = useState<number | null>(null);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const snapshotRef = useRef(snapshot);
+  const recorderRef = useRef<AudioRecorder | null>(null);
 
   const isOverlayRoute = location.hash === "#/overlay";
 
   useEffect(() => {
+    snapshotRef.current = snapshot;
+  }, [snapshot]);
+
+  useEffect(() => {
     void refresh();
-    return desktopApi.onShortcutToggle(() => {
+    const removeShortcut = desktopApi.onShortcutToggle(() => {
       void toggleDictation();
     });
+    const removeRecorderStart = desktopApi.onRecorderStart(async () => {
+      const recorder = createAudioRecorder({
+        onLevel: (level) => {
+          setLevelSamples((current) => [...current.slice(-17), level]);
+        }
+      });
+      recorderRef.current = recorder;
+      setRecordingStartedAt(performance.now());
+      await recorder.start();
+    });
+    const removeRecorderStop = desktopApi.onRecorderStop(async () => {
+      const recorder = recorderRef.current;
+      if (!recorder) {
+        throw new Error("audio.recorder_not_started");
+      }
+      const result = await recorder.stop();
+      recorderRef.current = null;
+      setRecordingStartedAt(null);
+      return result;
+    });
+    const removeRecorderCancel = desktopApi.onRecorderCancel(() => {
+      recorderRef.current?.cancel();
+      recorderRef.current = null;
+      setRecordingStartedAt(null);
+    });
+    const removeOverlayState = desktopApi.onOverlayState((payload) => {
+      if (isMainOverlayPayload(payload)) {
+        setOverlayPayload(payload);
+        if (payload.status === "recording") {
+          setRecordingStartedAt(performance.now());
+        }
+        if (payload.status === "complete" || payload.status === "error") {
+          setRecordingStartedAt(null);
+        }
+      }
+    });
+    return () => {
+      removeShortcut();
+      removeRecorderStart();
+      removeRecorderStop();
+      removeRecorderCancel();
+      removeOverlayState();
+    };
   }, []);
 
-  const overlayState = useMemo(() => buildOverlayState(snapshot.state, toggleDictation, cancelDictation, error), [snapshot.state, error]);
+  useEffect(() => {
+    if (recordingStartedAt === null) {
+      setElapsedMs(0);
+      return;
+    }
+    const interval = window.setInterval(() => {
+      setElapsedMs(Math.max(0, performance.now() - recordingStartedAt));
+    }, 250);
+    return () => window.clearInterval(interval);
+  }, [recordingStartedAt]);
+
+  const overlayState = useMemo(
+    () => buildOverlayState(snapshot.state, overlayPayload, levelSamples, elapsedMs, toggleDictation, cancelDictation, error),
+    [snapshot.state, overlayPayload, levelSamples, elapsedMs, error]
+  );
 
   if (isOverlayRoute) {
     return <Overlay state={overlayState} />;
@@ -83,8 +151,9 @@ export function App() {
   async function toggleDictation() {
     try {
       setError(null);
+      const currentState = snapshotRef.current.state;
       const next =
-        snapshot.state.status === "recording" || snapshot.state.status === "finalizing"
+        currentState.status === "recording" || currentState.status === "finalizing"
           ? await desktopApi.stopDictation()
           : await desktopApi.startDictation();
       setSnapshot(next);
@@ -129,6 +198,9 @@ export function App() {
 
 function buildOverlayState(
   state: DictationState,
+  overlayPayload: MainOverlayPayload | null,
+  levelSamples: number[],
+  elapsedMs: number,
   onFinish: () => void,
   onCancel: () => void,
   error: string | null
@@ -143,13 +215,29 @@ function buildOverlayState(
     };
   }
 
-  if (state.status === "recording") {
+  if (overlayPayload?.status === "recording" || state.status === "recording") {
     return {
       status: "recording",
-      elapsedMs: 0,
-      levelSamples: [0.2, 0.35, 0.5, 0.25],
+      elapsedMs,
+      levelSamples,
       onCancel,
       onFinish
+    };
+  }
+  if (overlayPayload?.status === "processing") {
+    return { status: "processing" };
+  }
+  if (overlayPayload?.status === "complete") {
+    return { status: "complete" };
+  }
+  if (overlayPayload?.status === "error") {
+    const message = overlayPayload.message ?? "Dictation failed.";
+    return {
+      status: "error",
+      message,
+      onRetry: onFinish,
+      onCopy: () => void navigator.clipboard.writeText(message),
+      onDismiss: onCancel
     };
   }
   if (state.status === "finalizing") {
@@ -174,4 +262,21 @@ function buildOverlayState(
     };
   }
   return { status: "complete" };
+}
+
+interface MainOverlayPayload {
+  status: "recording" | "processing" | "complete" | "error";
+  sessionId: string;
+  message?: string;
+}
+
+function isMainOverlayPayload(payload: unknown): payload is MainOverlayPayload {
+  if (!payload || typeof payload !== "object") {
+    return false;
+  }
+  const value = payload as { status?: unknown; sessionId?: unknown };
+  return (
+    typeof value.sessionId === "string" &&
+    (value.status === "recording" || value.status === "processing" || value.status === "complete" || value.status === "error")
+  );
 }

@@ -1,5 +1,9 @@
-import { app, BrowserWindow, shell } from "electron";
+import { randomUUID } from "node:crypto";
+import { app, BrowserWindow, ipcMain, shell } from "electron";
 import path from "node:path";
+import { processDictation } from "./dictation/backendClient";
+import { createRendererRecorderBridge } from "./dictation/rendererRecorderBridge";
+import { createDictationSessionController } from "./dictation/sessionController";
 import { getUserDataPath } from "./appPaths";
 import { registerIpcHandlers } from "./ipc";
 import { captureContext } from "./platform/context";
@@ -38,6 +42,36 @@ if (!gotLock) {
     const history = createHistoryRepository(db);
     const settings = createSettingsRepository(db);
     const dictionary = createDictionaryRepository(db);
+    const recorder = createRendererRecorderBridge({ webContents: hubWindow.webContents, ipcMain });
+    const overlay = overlayWindow;
+    const controller = createDictationSessionController({
+      createSessionId: randomUUID,
+      now: () => new Date().toISOString(),
+      captureContext,
+      recorder,
+      backend: (input) => processDictation({ ...input, apiBaseUrl: getApiBaseUrl() }),
+      insertText: pasteTextWithClipboardFallback,
+      overlay: {
+        showRecording: ({ sessionId }) => {
+          overlay.showInactive();
+          overlay.webContents.send("echo:overlay-state", { status: "recording", sessionId });
+        },
+        showProcessing: ({ sessionId }) => {
+          overlay.showInactive();
+          overlay.webContents.send("echo:overlay-state", { status: "processing", sessionId });
+        },
+        showError: ({ sessionId, code, message }) => {
+          overlay.showInactive();
+          overlay.webContents.send("echo:overlay-state", { status: "error", sessionId, code, message });
+        },
+        showComplete: ({ sessionId }) => {
+          overlay.webContents.send("echo:overlay-state", { status: "complete", sessionId });
+          setTimeout(() => overlay.hide(), 1200);
+        },
+        hide: () => overlay.hide()
+      },
+      repositories: { history, settings, dictionary }
+    });
 
     registerIpcHandlers({
       windows,
@@ -46,21 +80,7 @@ if (!gotLock) {
         captureContext,
         insertText: pasteTextWithClipboardFallback
       },
-      dictation: {
-        getAppState: () => ({
-          state: { status: "idle" as const },
-          settings: settings.getSettings()
-        }),
-        startDictation: async () => {
-          throw new Error("dictation.session_controller_missing");
-        },
-        stopDictation: async () => {
-          throw new Error("dictation.session_controller_missing");
-        },
-        cancelDictation: async () => {
-          throw new Error("dictation.session_controller_missing");
-        }
-      }
+      dictation: controller
     });
 
     const shortcut = settings.getSettings().shortcut;
@@ -91,6 +111,17 @@ if (!gotLock) {
       app.quit();
     }
   });
+}
+
+function getApiBaseUrl() {
+  const explicit = process.env.API_BASE_URL;
+  if (explicit) {
+    return explicit;
+  }
+
+  const host = process.env.API_HOST ?? "127.0.0.1";
+  const port = process.env.API_PORT ?? "43110";
+  return `http://${host}:${port}`;
 }
 
 function createWindows() {
