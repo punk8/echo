@@ -88,6 +88,19 @@ export function createDictationSessionController(deps: DictationSessionControlle
     const sessionId = deps.createSessionId();
     const permissions = deps.getPermissionStatus();
 
+    if (permissions.microphone === "denied" || permissions.microphone === "restricted") {
+      const code = "permission.microphone_missing";
+      const message = "Microphone permission is required to start dictation.";
+      state = {
+        status: "error",
+        sessionId,
+        code,
+        message
+      };
+      deps.overlay.showError({ sessionId, code, message });
+      return getAppState();
+    }
+
     if (permissions.accessibility !== "granted") {
       const code = "permission.accessibility_missing";
       const message = "Accessibility permission is required to insert dictation into other apps.";

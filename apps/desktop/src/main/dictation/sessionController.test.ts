@@ -157,6 +157,39 @@ describe("createDictationSessionController", () => {
     });
   });
 
+  it("does not start recording when microphone permission is denied", async () => {
+    const { deps } = createDeps();
+    deps.getPermissionStatus.mockReturnValueOnce({ microphone: "denied", accessibility: "granted" });
+    const controller = createDictationSessionController(deps);
+
+    const snapshot = await controller.startDictation();
+
+    expect(deps.captureContext).not.toHaveBeenCalled();
+    expect(deps.recorder.start).not.toHaveBeenCalled();
+    expect(deps.overlay.showError).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      code: "permission.microphone_missing",
+      message: "Microphone permission is required to start dictation."
+    });
+    expect(snapshot.state).toEqual({
+      status: "error",
+      sessionId: "session-1",
+      code: "permission.microphone_missing",
+      message: "Microphone permission is required to start dictation."
+    });
+  });
+
+  it("allows not-determined microphone permission so macOS can prompt during recording start", async () => {
+    const { deps } = createDeps();
+    deps.getPermissionStatus.mockReturnValueOnce({ microphone: "not-determined", accessibility: "granted" });
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+
+    expect(deps.captureContext).toHaveBeenCalled();
+    expect(deps.recorder.start).toHaveBeenCalledWith("session-1");
+  });
+
   it("reports microphone permission errors when recorder start fails", async () => {
     const { deps } = createDeps();
     deps.recorder.start.mockRejectedValueOnce(new Error("NotAllowedError: Permission denied"));
