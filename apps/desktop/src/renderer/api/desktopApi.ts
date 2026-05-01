@@ -3,6 +3,7 @@ import type { DictionaryTermInput, DictionaryTermRow } from "../../main/storage/
 import type { HistoryRow } from "../../main/storage/historyRepository";
 import type { EchoSettings } from "../../main/storage/settingsRepository";
 import type { AudioRecorderResult } from "../recording/audioRecorder";
+import type { PermissionStatusSnapshot } from "../../main/platform/permissions";
 
 export interface AppStateSnapshot {
   state: DictationState;
@@ -23,6 +24,9 @@ export const desktopApi = {
   deleteDictionaryTerm: (id: string) => window.echo.deleteDictionaryTerm(id) as Promise<void>,
   getSettings: () => window.echo.getSettings() as Promise<EchoSettings>,
   saveSettings: (settings: Partial<EchoSettings>) => window.echo.saveSettings(settings) as Promise<EchoSettings>,
+  getPermissionStatus: () => window.echo.getPermissionStatus() as Promise<PermissionStatusSnapshot>,
+  requestMicrophonePermission: () => window.echo.requestMicrophonePermission() as Promise<PermissionStatusSnapshot>,
+  requestAccessibilityPermission: () => window.echo.requestAccessibilityPermission() as Promise<PermissionStatusSnapshot>,
   onShortcutToggle: (callback: () => void) => window.echo.onShortcutToggle(callback),
   onShortcutError: (callback: (payload: unknown) => void) => window.echo.onShortcutError(callback),
   onRecorderStart: (callback: (payload: { sessionId: string }) => Promise<void>) => window.echo.onRecorderStart(callback),
@@ -47,6 +51,9 @@ declare global {
       deleteDictionaryTerm: (id: string) => Promise<unknown>;
       getSettings: () => Promise<unknown>;
       saveSettings: (settings: unknown) => Promise<unknown>;
+      getPermissionStatus: () => Promise<unknown>;
+      requestMicrophonePermission: () => Promise<unknown>;
+      requestAccessibilityPermission: () => Promise<unknown>;
       onShortcutToggle: (callback: () => void) => () => void;
       onShortcutError: (callback: (payload: unknown) => void) => () => void;
       onRecorderStart: (callback: (payload: { sessionId: string }) => Promise<void>) => () => void;

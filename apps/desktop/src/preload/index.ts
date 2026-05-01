@@ -15,6 +15,9 @@ const echoApi = {
   deleteDictionaryTerm: (id: string) => ipcRenderer.invoke("echo:delete-dictionary-term", id),
   getSettings: () => ipcRenderer.invoke("echo:get-settings"),
   saveSettings: (settings: unknown) => ipcRenderer.invoke("echo:save-settings", settings),
+  getPermissionStatus: () => ipcRenderer.invoke("echo:get-permission-status"),
+  requestMicrophonePermission: () => ipcRenderer.invoke("echo:request-microphone-permission"),
+  requestAccessibilityPermission: () => ipcRenderer.invoke("echo:request-accessibility-permission"),
   showOverlay: () => ipcRenderer.invoke("echo:show-overlay"),
   hideOverlay: () => ipcRenderer.invoke("echo:hide-overlay"),
   onShortcutToggle: (callback: () => void) => {

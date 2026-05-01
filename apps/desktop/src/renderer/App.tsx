@@ -8,6 +8,7 @@ import { HistoryPage } from "./pages/HistoryPage";
 import { HomePage } from "./pages/HomePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import type { DictionaryTermRow } from "../main/storage/dictionaryRepository";
+import type { PermissionStatusSnapshot } from "../main/platform/permissions";
 import type { HistoryRow } from "../main/storage/historyRepository";
 import type { EchoSettings } from "../main/storage/settingsRepository";
 import { createAudioRecorder, type AudioRecorder } from "./recording/audioRecorder";
@@ -24,6 +25,10 @@ export function App() {
   const [snapshot, setSnapshot] = useState<AppStateSnapshot>({ state: { status: "idle" }, settings: defaultSettings });
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [dictionary, setDictionary] = useState<DictionaryTermRow[]>([]);
+  const [permissions, setPermissions] = useState<PermissionStatusSnapshot>({
+    microphone: "unknown",
+    accessibility: "denied"
+  });
   const [error, setError] = useState<string | null>(null);
   const [overlayPayload, setOverlayPayload] = useState<MainOverlayPayload | null>(null);
   const [levelSamples, setLevelSamples] = useState<number[]>([0.16, 0.22, 0.18, 0.28]);
@@ -142,22 +147,27 @@ export function App() {
       {page === "settings" ? (
         <SettingsPage
           settings={snapshot.settings}
+          permissions={permissions}
           onSave={(settings) => void saveSettings(settings)}
           onRestoreDefaultShortcut={() => void saveSettings({ shortcut: "Alt+Space" })}
+          onRequestMicrophone={() => void requestMicrophonePermission()}
+          onRequestAccessibility={() => void requestAccessibilityPermission()}
         />
       ) : null}
     </HubLayout>
   );
 
   async function refresh() {
-    const [appState, rows, terms] = await Promise.all([
+    const [appState, rows, terms, permissionStatus] = await Promise.all([
       desktopApi.getAppState(),
       desktopApi.listHistory(),
-      desktopApi.listDictionaryTerms()
+      desktopApi.listDictionaryTerms(),
+      desktopApi.getPermissionStatus()
     ]);
     setSnapshot(appState);
     setHistory(rows);
     setDictionary(terms);
+    setPermissions(permissionStatus);
   }
 
   async function toggleDictation() {
@@ -215,6 +225,14 @@ export function App() {
   async function clearHistory() {
     await desktopApi.clearHistory();
     setHistory([]);
+  }
+
+  async function requestMicrophonePermission() {
+    setPermissions(await desktopApi.requestMicrophonePermission());
+  }
+
+  async function requestAccessibilityPermission() {
+    setPermissions(await desktopApi.requestAccessibilityPermission());
   }
 }
 

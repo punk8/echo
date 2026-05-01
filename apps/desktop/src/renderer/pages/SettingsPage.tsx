@@ -1,13 +1,20 @@
+import type { PermissionStatusSnapshot } from "../../main/platform/permissions";
 import type { EchoSettings } from "../../main/storage/settingsRepository";
 
 export function SettingsPage({
   settings,
+  permissions = { microphone: "unknown", accessibility: "denied" },
   onSave,
-  onRestoreDefaultShortcut
+  onRestoreDefaultShortcut,
+  onRequestMicrophone = () => undefined,
+  onRequestAccessibility = () => undefined
 }: {
   settings: EchoSettings;
+  permissions?: PermissionStatusSnapshot;
   onSave: (settings: Partial<EchoSettings>) => void;
   onRestoreDefaultShortcut: () => void;
+  onRequestMicrophone?: () => void;
+  onRequestAccessibility?: () => void;
 }) {
   return (
     <section className="page-stack settings-page">
@@ -34,6 +41,18 @@ export function SettingsPage({
             <option value="system">System default</option>
           </select>
         </label>
+        <PermissionRow
+          label="Microphone Permission"
+          value={permissions.microphone}
+          actionLabel="Request"
+          onRequest={onRequestMicrophone}
+        />
+        <PermissionRow
+          label="Accessibility Permission"
+          value={permissions.accessibility}
+          actionLabel="Open Prompt"
+          onRequest={onRequestAccessibility}
+        />
         <label>
           Language
           <select value={settings.language} onChange={(event) => onSave({ language: event.target.value })}>
@@ -67,4 +86,35 @@ export function SettingsPage({
       </section>
     </section>
   );
+}
+
+function PermissionRow({
+  label,
+  value,
+  actionLabel,
+  onRequest
+}: {
+  label: string;
+  value: string;
+  actionLabel: string;
+  onRequest: () => void;
+}) {
+  return (
+    <label className="permission-row">
+      {label}
+      <span>
+        <strong>{formatPermission(value)}</strong>
+        <button type="button" className="secondary-button" onClick={onRequest}>
+          {actionLabel}
+        </button>
+      </span>
+    </label>
+  );
+}
+
+function formatPermission(value: string) {
+  return value
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }

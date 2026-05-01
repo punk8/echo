@@ -8,6 +8,11 @@ import { getUserDataPath } from "./appPaths";
 import { registerIpcHandlers } from "./ipc";
 import { captureContext } from "./platform/context";
 import { pasteTextWithClipboardFallback } from "./platform/insertion";
+import {
+  getPermissionStatus,
+  requestAccessibilityPermission,
+  requestMicrophonePermission
+} from "./platform/permissions";
 import { DEFAULT_DICTATION_SHORTCUT, createDictationShortcutController } from "./platform/shortcut";
 import { openEchoDatabase } from "./storage/database";
 import { createDictionaryRepository } from "./storage/dictionaryRepository";
@@ -90,7 +95,10 @@ if (!gotLock) {
       repositories: { history, settings, dictionary },
       platform: {
         captureContext,
-        insertText: pasteTextWithClipboardFallback
+        insertText: pasteTextWithClipboardFallback,
+        getPermissionStatus,
+        requestMicrophonePermission,
+        requestAccessibilityPermission
       },
       dictation: controller,
       onSettingsSaved: (nextSettings) => {

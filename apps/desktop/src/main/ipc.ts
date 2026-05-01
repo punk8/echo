@@ -2,6 +2,11 @@ import { ipcMain, type BrowserWindow } from "electron";
 import type { DictationState } from "@echo/shared";
 import type { captureContext } from "./platform/context";
 import type { pasteTextWithClipboardFallback } from "./platform/insertion";
+import type {
+  getPermissionStatus,
+  requestAccessibilityPermission,
+  requestMicrophonePermission
+} from "./platform/permissions";
 import type { createDictionaryRepository } from "./storage/dictionaryRepository";
 import type { createHistoryRepository } from "./storage/historyRepository";
 import type { EchoSettings, createSettingsRepository } from "./storage/settingsRepository";
@@ -28,6 +33,9 @@ export interface RegisterIpcHandlersDeps {
   platform: {
     captureContext: typeof captureContext;
     insertText: typeof pasteTextWithClipboardFallback;
+    getPermissionStatus: typeof getPermissionStatus;
+    requestMicrophonePermission: typeof requestMicrophonePermission;
+    requestAccessibilityPermission: typeof requestAccessibilityPermission;
   };
   dictation: {
     getAppState: () => AppStateSnapshot;
@@ -44,6 +52,9 @@ export function registerIpcHandlers(deps: RegisterIpcHandlersDeps) {
   ipcMain.handle("echo:stop-dictation", () => deps.dictation.stopDictation());
   ipcMain.handle("echo:cancel-dictation", () => deps.dictation.cancelDictation());
   ipcMain.handle("echo:capture-context", () => deps.platform.captureContext());
+  ipcMain.handle("echo:get-permission-status", () => deps.platform.getPermissionStatus());
+  ipcMain.handle("echo:request-microphone-permission", () => deps.platform.requestMicrophonePermission());
+  ipcMain.handle("echo:request-accessibility-permission", () => deps.platform.requestAccessibilityPermission());
 
   ipcMain.handle("echo:list-history", () => deps.repositories.history.listHistory());
   ipcMain.handle("echo:delete-history-row", (_event, id: string) => {
