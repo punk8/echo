@@ -66,6 +66,7 @@ function createDeps() {
       deleteLocalRecording: vi.fn().mockResolvedValue(undefined),
       overlay: {
         showRecording: vi.fn(),
+        showFinalizing: vi.fn(),
         showProcessing: vi.fn(),
         showInserting: vi.fn(),
         showCopied: vi.fn(),
@@ -241,6 +242,7 @@ describe("createDictationSessionController", () => {
     const snapshot = await controller.stopDictation();
 
     expect(deps.backend).toHaveBeenCalledWith(expect.objectContaining({ sessionId: "session-1", audioFormat: "webm" }));
+    expect(deps.overlay.showFinalizing).toHaveBeenCalledWith({ sessionId: "session-1" });
     expect(deps.overlay.showInserting).toHaveBeenCalledWith({ sessionId: "session-1" });
     expect(deps.insertText).toHaveBeenCalledWith("Tomorrow at three.");
     expect(historyRows).toHaveLength(1);

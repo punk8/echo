@@ -37,6 +37,7 @@ export interface DictationSessionControllerDeps {
   deleteLocalRecording: (localPath: string) => Promise<void>;
   overlay: {
     showRecording: (input: { sessionId: string; context: DictationContext }) => void;
+    showFinalizing: (input: { sessionId: string }) => void;
     showProcessing: (input: { sessionId: string }) => void;
     showInserting: (input: { sessionId: string }) => void;
     showCopied: (input: { sessionId: string }) => void;
@@ -159,6 +160,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
   async function stopDictation() {
     const session = requireCurrentSession();
     state = applyDictationEvent(state, { type: "stop_requested" });
+    deps.overlay.showFinalizing({ sessionId: session.sessionId });
 
     let recording: RecordedAudio;
     try {

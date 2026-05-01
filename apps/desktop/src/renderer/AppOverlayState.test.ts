@@ -75,4 +75,21 @@ describe("buildOverlayState", () => {
 
     expect(overlayState).toEqual({ status: "copied" });
   });
+
+  it("maps finalizing overlay payloads to finalizing state", () => {
+    const overlayState = buildOverlayState(
+      { status: "recording", sessionId: "session-1" },
+      {
+        status: "finalizing",
+        sessionId: "session-1"
+      },
+      [0.2],
+      1200,
+      vi.fn(),
+      vi.fn(),
+      null
+    );
+
+    expect(overlayState).toEqual({ status: "finalizing" });
+  });
 });

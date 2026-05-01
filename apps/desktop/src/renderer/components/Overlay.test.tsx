@@ -20,6 +20,13 @@ describe("Overlay", () => {
     expect(markup).toContain("Processing");
   });
 
+  it("shows finalizing state explicitly", () => {
+    const markup = renderToStaticMarkup(<Overlay state={{ status: "finalizing" }} />);
+
+    expect(markup).toContain("Finalizing");
+    expect(markup).toContain("Preparing audio");
+  });
+
   it("shows a manual paste instruction when text was copied instead of inserted", () => {
     const markup = renderToStaticMarkup(<Overlay state={{ status: "copied" }} />);
 

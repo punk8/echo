@@ -99,7 +99,7 @@ export function App() {
         if (payload.status === "recording") {
           setRecordingStartedAt(performance.now());
         }
-        if (payload.status === "complete" || payload.status === "error") {
+        if (payload.status === "finalizing" || payload.status === "complete" || payload.status === "error") {
           setRecordingStartedAt(null);
         }
       }
@@ -311,6 +311,9 @@ export function buildOverlayState(
     };
   }
 
+  if (overlayPayload?.status === "finalizing") {
+    return { status: "finalizing" };
+  }
   if (overlayPayload?.status === "recording" || state.status === "recording") {
     return {
       status: "recording",
@@ -368,7 +371,7 @@ export function buildOverlayState(
 }
 
 export interface MainOverlayPayload {
-  status: "recording" | "processing" | "inserting" | "copied" | "complete" | "error";
+  status: "recording" | "finalizing" | "processing" | "inserting" | "copied" | "complete" | "error";
   sessionId: string;
   message?: string;
   recoverableText?: string;
@@ -383,6 +386,7 @@ export function isMainOverlayPayload(payload: unknown): payload is MainOverlayPa
     typeof value.sessionId === "string" &&
     (value.recoverableText === undefined || typeof value.recoverableText === "string") &&
     (value.status === "recording" ||
+      value.status === "finalizing" ||
       value.status === "processing" ||
       value.status === "inserting" ||
       value.status === "copied" ||
