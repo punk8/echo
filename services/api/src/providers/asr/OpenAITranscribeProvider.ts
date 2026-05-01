@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import type { ASRInput, ASRProvider, ASRResult } from "./ASRProvider";
+import type { ASRInput, ASRProvider, ASRResult } from "./ASRProvider.js";
 
 type TranscriptionClient = {
   audio: {

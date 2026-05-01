@@ -7,10 +7,10 @@ import {
   type DictationPreferences,
   type DictionaryTerm
 } from "@echo/shared";
-import type { ASRProvider } from "../providers/asr/ASRProvider";
-import type { LLMProvider } from "../providers/llm/LLMProvider";
-import { buildDictationPrompt } from "../refiner/buildDictationPrompt";
-import { validateRefinedResult } from "../refiner/validateRefinedResult";
+import type { ASRProvider } from "../providers/asr/ASRProvider.js";
+import type { LLMProvider } from "../providers/llm/LLMProvider.js";
+import { buildDictationPrompt } from "../refiner/buildDictationPrompt.js";
+import { validateRefinedResult } from "../refiner/validateRefinedResult.js";
 
 export interface DictationRouteDeps {
   asr: ASRProvider;

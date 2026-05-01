@@ -1,4 +1,4 @@
-import type { LLMCompletionInput, LLMCompletionResult, LLMProvider } from "./LLMProvider";
+import type { LLMCompletionInput, LLMCompletionResult, LLMProvider } from "./LLMProvider.js";
 
 type FetchImpl = typeof fetch;
 

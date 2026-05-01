@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import multipart from "@fastify/multipart";
-import type { DictationRouteDeps } from "./dictation/dictationRoute";
-import { registerDictationRoute } from "./dictation/dictationRoute";
+import type { DictationRouteDeps } from "./dictation/dictationRoute.js";
+import { registerDictationRoute } from "./dictation/dictationRoute.js";
 
 export interface ProviderMetadata {
   asr: string;
