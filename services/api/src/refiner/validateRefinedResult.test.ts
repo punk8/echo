@@ -24,6 +24,28 @@ describe("validateRefinedResult", () => {
     ).toThrow("server.refine_failed");
   });
 
+  it("rejects refinements that change dictation into a command", () => {
+    expect(() =>
+      validateRefinedResult({
+        rawText: "open safari",
+        llmContent:
+          "{\"refined_text\":\"Opening Safari.\",\"language\":\"en\",\"edits\":[],\"risk\":\"low\",\"warnings\":[],\"mode\":\"command\",\"action\":\"open_app\"}",
+        dictionaryTerms: []
+      })
+    ).toThrow("server.refine_failed");
+  });
+
+  it("rejects refinements that change dictation into an answer", () => {
+    expect(() =>
+      validateRefinedResult({
+        rawText: "what time is the meeting",
+        llmContent:
+          "{\"refined_text\":\"The meeting is at 3 PM.\",\"language\":\"en\",\"edits\":[],\"risk\":\"low\",\"warnings\":[],\"mode\":\"answer\",\"answer\":\"The meeting is at 3 PM.\"}",
+        dictionaryTerms: []
+      })
+    ).toThrow("server.refine_failed");
+  });
+
   it("raises risk when dictionary terms disappear", () => {
     const result = validateRefinedResult({
       rawText: "Echo should remember this",

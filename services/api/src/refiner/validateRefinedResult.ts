@@ -31,6 +31,10 @@ export function validateRefinedResult(input: ValidateRefinedResultInput): Valida
     throw new Error("server.refine_failed");
   }
 
+  if (hasNonDictationOutputShape(parsedJson)) {
+    throw new Error("server.refine_failed");
+  }
+
   const parsed = RefinedPayloadSchema.safeParse(parsedJson);
   if (!parsed.success) {
     throw new Error("server.refine_failed");
@@ -84,4 +88,47 @@ function containsToken(text: string, token: string) {
 
 function unique(values: string[]) {
   return [...new Set(values)];
+}
+
+const nonDictationModes = new Set([
+  "action",
+  "answer",
+  "ask",
+  "command",
+  "edit",
+  "qa",
+  "question",
+  "search",
+  "summarize",
+  "summary",
+  "tool",
+  "translate",
+  "translation"
+]);
+
+const nonDictationFields = new Set([
+  "action",
+  "answer",
+  "command",
+  "final_answer",
+  "tool",
+  "tool_call",
+  "tool_calls"
+]);
+
+function hasNonDictationOutputShape(value: unknown) {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const mode = value.mode;
+  if (typeof mode === "string" && nonDictationModes.has(mode.trim().toLowerCase())) {
+    return true;
+  }
+
+  return Object.keys(value).some((key) => nonDictationFields.has(key.trim().toLowerCase()));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
