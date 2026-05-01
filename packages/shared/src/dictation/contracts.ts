@@ -20,7 +20,8 @@ export const DictionaryTermSchema = z.object({
   case_sensitive: z.boolean(),
   source: z.enum(["manual", "learned"]),
   pronunciation_hint: z.string().optional(),
-  capitalization: z.string().optional()
+  capitalization: z.string().optional(),
+  language: z.string().optional()
 });
 
 export const DictationPreferencesSchema = z.object({

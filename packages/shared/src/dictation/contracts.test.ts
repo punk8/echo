@@ -23,7 +23,8 @@ describe("dictation contracts", () => {
           case_sensitive: true,
           source: "manual",
           pronunciation_hint: "EH-koh",
-          capitalization: "Echo"
+          capitalization: "Echo",
+          language: "en"
         }
       ],
       preferences: {
@@ -37,6 +38,7 @@ describe("dictation contracts", () => {
     expect(result.dictionary[0]?.term).toBe("Echo");
     expect(result.dictionary[0]?.pronunciation_hint).toBe("EH-koh");
     expect(result.dictionary[0]?.capitalization).toBe("Echo");
+    expect(result.dictionary[0]?.language).toBe("en");
   });
 
   it("rejects unsupported audio formats before provider calls", () => {

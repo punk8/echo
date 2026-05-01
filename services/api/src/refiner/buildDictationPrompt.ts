@@ -18,7 +18,8 @@ export function buildDictationPrompt(input: BuildDictationPromptInput): Dictatio
     const aliases = term.aliases.length > 0 ? ` aliases=${term.aliases.join(", ")}` : "";
     const pronunciation = term.pronunciation_hint ? ` pronunciation=${term.pronunciation_hint}` : "";
     const capitalization = term.capitalization ? ` capitalization=${term.capitalization}` : "";
-    return `- ${term.term}${aliases}${pronunciation}${capitalization}; source=${term.source}; case_sensitive=${term.case_sensitive}`;
+    const language = term.language ? ` language=${term.language}` : "";
+    return `- ${term.term}${aliases}${pronunciation}${capitalization}${language}; source=${term.source}; case_sensitive=${term.case_sensitive}`;
   });
 
   return {

@@ -517,6 +517,25 @@ describe("createDictationSessionController", () => {
     );
   });
 
+  it("passes dictionary language metadata to backend refinement", async () => {
+    const { deps } = createDeps();
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+    await controller.stopDictation();
+
+    expect(deps.backend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dictionary: [
+          expect.objectContaining({
+            term: "Echo",
+            language: "en"
+          })
+        ]
+      })
+    );
+  });
+
   it("retries a failed history row from retained audio and copies the refined result", async () => {
     const { deps, historyRows } = createDeps();
     deps.repositories.history.getHistoryRow.mockReturnValue({

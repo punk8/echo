@@ -21,7 +21,8 @@ describe("buildDictationPrompt", () => {
           case_sensitive: true,
           source: "manual",
           pronunciation_hint: "EH-koh",
-          capitalization: "Echo"
+          capitalization: "Echo",
+          language: "en"
         }
       ],
       preferences: { style: "balanced", output_language: "follow_input", format_lists: true }
@@ -33,6 +34,7 @@ describe("buildDictationPrompt", () => {
     expect(prompt.user).toContain("Echo");
     expect(prompt.user).toContain("pronunciation=EH-koh");
     expect(prompt.user).toContain("capitalization=Echo");
+    expect(prompt.user).toContain("language=en");
     expect(prompt.user).toContain("um tomorrow at seven no make it three");
   });
 });
