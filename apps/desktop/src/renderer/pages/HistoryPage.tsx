@@ -1,0 +1,71 @@
+import type { HistoryRow } from "../../main/storage/historyRepository";
+import type { EchoSettings, HistoryRetention } from "../../main/storage/settingsRepository";
+
+export function HistoryPage({
+  history,
+  settings,
+  onRetentionChange,
+  onCopy,
+  onDelete,
+  onRetry
+}: {
+  history: HistoryRow[];
+  settings: EchoSettings;
+  onRetentionChange: (retention: HistoryRetention) => void;
+  onCopy: (text: string) => void;
+  onDelete: (id: string) => void;
+  onRetry: (id: string) => void;
+}) {
+  return (
+    <section className="page-stack">
+      <header className="page-header compact-header">
+        <div>
+          <p className="eyebrow">Review</p>
+          <h1>History</h1>
+        </div>
+        <label className="field-inline">
+          Retention
+          <select value={settings.historyRetention} onChange={(event) => onRetentionChange(event.target.value as HistoryRetention)}>
+            <option value="24_hours">24 hours</option>
+            <option value="1_week">1 week</option>
+            <option value="1_month">1 month</option>
+            <option value="forever">Forever</option>
+            <option value="never">Never</option>
+          </select>
+        </label>
+      </header>
+
+      <section className="table-section">
+        <div className="history-list">
+          {history.length === 0 ? <p className="empty-state">No saved rows.</p> : null}
+          {history.map((row) => (
+            <article key={row.id} className="history-row full">
+              <div className="row-main">
+                <strong>{row.refined_text || row.raw_text || row.error_code}</strong>
+                <span>
+                  {formatDate(row.created_at)} · {row.focused_app_name} · {row.provider_asr}
+                </span>
+              </div>
+              <span className={`status-chip ${row.insertion_status}`}>{row.insertion_status}</span>
+              <div className="row-actions">
+                <button type="button" onClick={() => onRetry(row.id)}>
+                  Retry
+                </button>
+                <button type="button" onClick={() => onCopy(row.refined_text || row.raw_text)}>
+                  Copy
+                </button>
+                <button type="button" onClick={() => onDelete(row.id)}>
+                  Delete
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    </section>
+  );
+}
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleString([], { month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+}

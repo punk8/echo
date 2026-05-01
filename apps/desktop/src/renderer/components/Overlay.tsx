@@ -1,0 +1,89 @@
+export type OverlayState =
+  | {
+      status: "recording";
+      elapsedMs: number;
+      levelSamples: number[];
+      onCancel: () => void;
+      onFinish: () => void;
+    }
+  | { status: "finalizing" }
+  | { status: "processing" }
+  | { status: "inserting" }
+  | { status: "complete" }
+  | {
+      status: "error";
+      message: string;
+      onRetry: () => void;
+      onCopy: () => void;
+      onDismiss: () => void;
+    };
+
+export function Overlay({ state }: { state: OverlayState }) {
+  return (
+    <div className={`overlay overlay-${state.status}`} role="status" aria-live="polite">
+      {state.status === "recording" ? (
+        <>
+          <div className="overlay-status">
+            <span className="pulse-dot" aria-hidden="true" />
+            <span>{formatElapsed(state.elapsedMs)}</span>
+          </div>
+          <div className="waveform" aria-label="Input level">
+            {Array.from({ length: 18 }).map((_, index) => {
+              const level = state.levelSamples[index % Math.max(1, state.levelSamples.length)] ?? 0.12;
+              return <span key={index} style={{ height: `${Math.max(14, level * 44)}px` }} />;
+            })}
+          </div>
+          <div className="overlay-actions">
+            <button type="button" className="ghost-button" onClick={state.onCancel}>
+              Cancel
+            </button>
+            <button type="button" className="primary-button" onClick={state.onFinish}>
+              Finish
+            </button>
+          </div>
+        </>
+      ) : null}
+
+      {state.status === "finalizing" ? <OverlayMessage title="Finalizing" detail="Preparing audio" /> : null}
+      {state.status === "processing" ? <OverlayMessage title="Processing" detail="Refining dictation" /> : null}
+      {state.status === "inserting" ? <OverlayMessage title="Inserting" detail="Pasting into the active app" /> : null}
+      {state.status === "complete" ? <OverlayMessage title="Inserted" detail="Ready for the next dictation" /> : null}
+
+      {state.status === "error" ? (
+        <>
+          <OverlayMessage title="Could not finish" detail={state.message} />
+          <div className="overlay-actions">
+            <button type="button" className="ghost-button" onClick={state.onRetry}>
+              Retry
+            </button>
+            <button type="button" className="ghost-button" onClick={state.onCopy}>
+              Copy
+            </button>
+            <button type="button" className="primary-button" onClick={state.onDismiss}>
+              Dismiss
+            </button>
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function OverlayMessage({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="overlay-message">
+      <span className="spinner" aria-hidden="true" />
+      <div>
+        <strong>{title}</strong>
+        <span>{detail}</span>
+      </div>
+    </div>
+  );
+}
+
+function formatElapsed(value: number) {
+  const totalSeconds = Math.floor(value / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+}

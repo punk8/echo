@@ -10,9 +10,15 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()]
   },
   renderer: {
+    root: ".",
     resolve: {
       alias: {
         "@renderer": resolve("src/renderer")
+      }
+    },
+    build: {
+      rollupOptions: {
+        input: resolve("index.html")
       }
     },
     plugins: [react()]
