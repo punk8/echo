@@ -14,6 +14,7 @@ import type { HistoryRow } from "../main/storage/historyRepository";
 import type { EchoSettings } from "../main/storage/settingsRepository";
 import { listMicrophoneDevices, type MicrophoneDevice } from "./recording/audioDevices";
 import { createAudioRecorder, type AudioRecorder } from "./recording/audioRecorder";
+import { formatShortcutError } from "./shortcutErrors";
 import "./styles.css";
 
 const defaultSettings: EchoSettings = {
@@ -63,6 +64,9 @@ export function App() {
     const removeShortcut = desktopApi.onShortcutToggle(() => {
       void toggleDictation();
     });
+    const removeShortcutError = desktopApi.onShortcutError((payload) => {
+      setError(formatShortcutError(payload));
+    });
     const removeRecorderStart = desktopApi.onRecorderStart(async () => {
       const recorder = createAudioRecorder({
         deviceId: snapshotRef.current.settings.microphoneDeviceId,
@@ -102,6 +106,7 @@ export function App() {
     });
     return () => {
       removeShortcut();
+      removeShortcutError();
       removeRecorderStart();
       removeRecorderStop();
       removeRecorderCancel();
