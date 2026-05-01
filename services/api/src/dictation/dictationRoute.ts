@@ -143,7 +143,7 @@ async function parseMultipart(request: FastifyRequest, maxAudioBytes: number): P
   return {
     sessionId: required(fields, "session_id"),
     audioFormat,
-    durationMs: Number(required(fields, "duration_ms")),
+    durationMs: parseDurationMs(required(fields, "duration_ms")),
     language: required(fields, "language"),
     context: DictationContextSchema.parse(JSON.parse(required(fields, "context"))),
     dictionary: DictionaryTermSchema.array().parse(JSON.parse(required(fields, "dictionary"))),
@@ -177,6 +177,14 @@ function parseAudioFormat(value: string): "webm" | "wav" {
   throw new Error("server.unsupported_audio_format");
 }
 
+function parseDurationMs(value: string) {
+  const durationMs = Number(value);
+  if (!Number.isInteger(durationMs) || durationMs < 0) {
+    throw new Error("server.invalid_duration");
+  }
+  return durationMs;
+}
+
 function normalizeMimeType(value: string): "audio/webm" | "audio/wav" {
   if (value === "audio/webm") {
     return "audio/webm";
@@ -202,7 +210,7 @@ function sendError(reply: FastifyReply, recovery: { sessionId: string; rawText: 
 }
 
 function statusForError(code: string) {
-  if (code.startsWith("missing.") || code === "server.unsupported_audio_format") {
+  if (code.startsWith("missing.") || code === "server.unsupported_audio_format" || code === "server.invalid_duration") {
     return 400;
   }
   if (code === "audio.no_speech_detected") {
@@ -241,6 +249,9 @@ function messageForCode(code: string) {
   }
   if (code === "server.audio_too_large") {
     return "Recording is too large. Try a shorter dictation.";
+  }
+  if (code === "server.invalid_duration") {
+    return "Invalid recording duration.";
   }
   return "Dictation processing failed.";
 }
