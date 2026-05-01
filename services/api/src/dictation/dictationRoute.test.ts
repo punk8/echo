@@ -221,6 +221,70 @@ describe("POST /v1/dictation/process", () => {
     expect(llmCalled).toBe(false);
   });
 
+  it("rejects audio that exceeds the configured request limit before provider calls", async () => {
+    let asrCalled = false;
+    const app = buildServer({
+      maxAudioBytes: 4,
+      asr: {
+        transcribe: async () => {
+          asrCalled = true;
+          return {
+            rawText: "hello",
+            language: "en",
+            provider: "openai:gpt-4o-transcribe",
+            durationMs: 12
+          };
+        }
+      },
+      llm: {
+        complete: async () => {
+          throw new Error("server.refine_failed");
+        }
+      }
+    });
+
+    const multipart = multipartBody([
+      { name: "session_id", value: "session-1" },
+      { name: "audio_format", value: "webm" },
+      { name: "duration_ms", value: "1200" },
+      { name: "language", value: "auto" },
+      {
+        name: "context",
+        value: JSON.stringify({
+          app_name: "TextEdit",
+          bundle_id: "com.apple.TextEdit",
+          window_title: "Untitled",
+          writable: true,
+          selection_present: false,
+          nearby_text: ""
+        })
+      },
+      {
+        name: "dictionary",
+        value: JSON.stringify([{ term: "Echo", aliases: [], case_sensitive: true, source: "manual" }])
+      },
+      {
+        name: "preferences",
+        value: JSON.stringify({ style: "balanced", output_language: "follow_input", format_lists: true })
+      },
+      { name: "audio", filename: "dictation.webm", contentType: "audio/webm", value: "audio-bytes" }
+    ]);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/dictation/process",
+      payload: multipart.body,
+      headers: multipart.headers
+    });
+
+    expect(response.statusCode).toBe(413);
+    expect(response.json().error).toMatchObject({
+      code: "server.audio_too_large",
+      message: "Recording is too large. Try a shorter dictation."
+    });
+    expect(asrCalled).toBe(false);
+  });
+
   it("returns specific messages for provider rate limits", async () => {
     const app = buildServer({
       asr: {

@@ -15,6 +15,7 @@ import { validateRefinedResult } from "../refiner/validateRefinedResult.js";
 export interface DictationRouteDeps {
   asr: ASRProvider;
   llm: LLMProvider;
+  maxAudioBytes?: number;
 }
 
 interface ParsedMultipart {
@@ -37,7 +38,7 @@ export async function registerDictationRoute(app: FastifyInstance, deps: Dictati
     let recoverableRawText = "";
 
     try {
-      const parsed = await parseMultipart(request);
+      const parsed = await parseMultipart(request, deps.maxAudioBytes ?? defaultMaxAudioBytes);
       sessionId = parsed.sessionId;
       const asrPrompt = buildDictionaryPrompt(parsed.dictionary);
       const asrInput = {
@@ -104,7 +105,9 @@ export async function registerDictationRoute(app: FastifyInstance, deps: Dictati
   });
 }
 
-async function parseMultipart(request: FastifyRequest): Promise<ParsedMultipart> {
+const defaultMaxAudioBytes = 25 * 1024 * 1024;
+
+async function parseMultipart(request: FastifyRequest, maxAudioBytes: number): Promise<ParsedMultipart> {
   const fields = new Map<string, string>();
   let audio: Buffer | undefined;
   let filename = "dictation.webm";
@@ -126,6 +129,9 @@ async function parseMultipart(request: FastifyRequest): Promise<ParsedMultipart>
 
   if (!audio) {
     throw new Error("server.audio_missing");
+  }
+  if (audio.byteLength > maxAudioBytes) {
+    throw new Error("server.audio_too_large");
   }
 
   const audioFormat = parseAudioFormat(required(fields, "audio_format"));
