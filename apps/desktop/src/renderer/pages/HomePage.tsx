@@ -41,7 +41,7 @@ export function HomePage({
         <section className="panel">
           <span className="panel-label">Provider</span>
           <strong>{providerStatus.reachable ? "Local API reachable" : "Local API offline"}</strong>
-          <small>{providerStatus.apiBaseUrl}</small>
+          <small>{formatProviderDetail(providerStatus)}</small>
         </section>
         <section className="panel">
           <span className="panel-label">Usage</span>
@@ -71,6 +71,13 @@ export function HomePage({
       </section>
     </section>
   );
+}
+
+function formatProviderDetail(providerStatus: ProviderStatus) {
+  if (providerStatus.asr && providerStatus.llm) {
+    return `${providerStatus.asr} / ${providerStatus.llm}`;
+  }
+  return providerStatus.apiBaseUrl;
 }
 
 function formatTime(value: string) {

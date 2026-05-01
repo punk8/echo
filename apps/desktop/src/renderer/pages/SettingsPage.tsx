@@ -83,7 +83,7 @@ export function SettingsPage({
           Provider
           <span className="provider-status">
             <strong>{providerStatus.reachable ? "Local API reachable" : "Local API offline"}</strong>
-            <small>{providerStatus.apiBaseUrl}</small>
+            <small>{formatProviderDetail(providerStatus)}</small>
           </span>
         </label>
         <label>
@@ -155,6 +155,13 @@ function withSelectedMicrophone(selectedId: string, devices: MicrophoneDevice[])
       label: "Selected microphone unavailable"
     }
   ];
+}
+
+function formatProviderDetail(providerStatus: ProviderStatus) {
+  if (providerStatus.asr && providerStatus.llm) {
+    return `${providerStatus.asr} / ${providerStatus.llm}`;
+  }
+  return providerStatus.apiBaseUrl;
 }
 
 function PermissionRow({

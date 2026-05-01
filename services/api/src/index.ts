@@ -8,7 +8,11 @@ const env = loadApiEnv(process.env);
 
 const app = buildServer({
   asr: new OpenAITranscribeProvider(env.asr),
-  llm: new OpenAICompatibleLLMProvider(env.llm)
+  llm: new OpenAICompatibleLLMProvider(env.llm),
+  providerMetadata: {
+    asr: `${env.asr.provider}:${env.asr.model}`,
+    llm: `${env.llm.provider}:${env.llm.model}`
+  }
 });
 
 await app.listen({ host: env.server.host, port: env.server.port });
