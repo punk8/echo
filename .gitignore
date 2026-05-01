@@ -14,6 +14,7 @@ release/
 coverage/
 .vite/
 .turbo/
+.worktrees/
 
 # Local runtime data
 *.log
