@@ -2,6 +2,7 @@ import type { DictationState } from "@echo/shared";
 import type { ProviderStatus } from "../../main/dictation/providerStatus";
 import type { HistoryRow } from "../../main/storage/historyRepository";
 import type { EchoSettings } from "../../main/storage/settingsRepository";
+import { formatProviderError } from "../providerStatusCopy";
 
 export function HomePage({
   state,
@@ -81,17 +82,6 @@ function formatProviderDetail(providerStatus: ProviderStatus) {
     return `${providerStatus.asr} / ${providerStatus.llm}`;
   }
   return providerStatus.apiBaseUrl;
-}
-
-function formatProviderError(errorCode: string) {
-  switch (errorCode) {
-    case "config.llm_missing":
-      return "LLM configuration missing";
-    case "config.asr_missing":
-      return "ASR configuration missing";
-    default:
-      return `Provider startup error: ${errorCode}`;
-  }
 }
 
 function formatTime(value: string) {

@@ -2,6 +2,7 @@ import type { PermissionStatusSnapshot } from "../../main/platform/permissions";
 import type { ProviderStatus } from "../../main/dictation/providerStatus";
 import type { EchoSettings } from "../../main/storage/settingsRepository";
 import type { MicrophoneDevice } from "../recording/audioDevices";
+import { formatProviderError } from "../providerStatusCopy";
 
 const systemDefaultDevice: MicrophoneDevice = {
   id: "system",
@@ -184,23 +185,6 @@ function formatProviderDetail(providerStatus: ProviderStatus) {
     return `${providerStatus.asr} / ${providerStatus.llm}`;
   }
   return providerStatus.apiBaseUrl;
-}
-
-function formatProviderError(errorCode: string) {
-  switch (errorCode) {
-    case "config.llm_model_missing":
-      return "LLM configuration missing. Set LLM_MODEL.";
-    case "config.llm_key_missing":
-      return "LLM configuration missing. Set LLM_API_KEY or API_KEY.";
-    case "config.llm_missing":
-      return "LLM configuration missing. Set LLM_MODEL and LLM_API_KEY.";
-    case "config.asr_key_missing":
-      return "ASR configuration missing. Set ASR_API_KEY or API_KEY.";
-    case "config.asr_missing":
-      return "ASR configuration missing. Set ASR_API_KEY or API_KEY.";
-    default:
-      return `Provider startup error: ${errorCode}`;
-  }
 }
 
 function formatRetention(value: EchoSettings["historyRetention"]) {
