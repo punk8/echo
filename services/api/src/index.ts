@@ -1,9 +1,10 @@
-import "dotenv/config";
+import { loadDotenv } from "./config/dotenv.js";
 import { loadApiEnv } from "./config/env.js";
 import { buildServer } from "./server.js";
 import { OpenAITranscribeProvider } from "./providers/asr/OpenAITranscribeProvider.js";
 import { OpenAICompatibleLLMProvider } from "./providers/llm/OpenAICompatibleLLMProvider.js";
 
+loadDotenv();
 const env = loadApiEnv(process.env);
 
 const app = buildServer({
