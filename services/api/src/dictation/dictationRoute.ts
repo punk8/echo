@@ -33,9 +33,12 @@ interface ParsedMultipart {
 export async function registerDictationRoute(app: FastifyInstance, deps: DictationRouteDeps) {
   app.post("/v1/dictation/process", async (request, reply) => {
     const receivedAt = new Date();
+    let sessionId = "";
+    let recoverableRawText = "";
 
     try {
       const parsed = await parseMultipart(request);
+      sessionId = parsed.sessionId;
       const asrPrompt = buildDictionaryPrompt(parsed.dictionary);
       const asrInput = {
         audio: parsed.audio,
@@ -44,6 +47,7 @@ export async function registerDictationRoute(app: FastifyInstance, deps: Dictati
         language: parsed.language
       };
       const asrResult = await deps.asr.transcribe(asrPrompt ? { ...asrInput, prompt: asrPrompt } : asrInput);
+      recoverableRawText = asrResult.rawText;
 
       const prompt = buildDictationPrompt({
         rawText: asrResult.rawText,
@@ -92,7 +96,7 @@ export async function registerDictationRoute(app: FastifyInstance, deps: Dictati
         }
       });
     } catch (error) {
-      return sendError(reply, request, error);
+      return sendError(reply, { sessionId, rawText: recoverableRawText }, error);
     }
   });
 }
@@ -174,18 +178,17 @@ function normalizeMimeType(value: string): "audio/webm" | "audio/wav" {
   throw new Error("server.unsupported_audio_format");
 }
 
-function sendError(reply: FastifyReply, request: FastifyRequest, error: unknown) {
+function sendError(reply: FastifyReply, recovery: { sessionId: string; rawText: string }, error: unknown) {
   const code = error instanceof Error ? error.message : "server.refine_failed";
-  const sessionId = typeof request.body === "object" && request.body && "session_id" in request.body ? String(request.body.session_id) : "";
 
   return reply.status(statusForError(code)).send({
-    session_id: sessionId,
+    session_id: recovery.sessionId,
     error: {
       code,
       message: messageForCode(code),
       recoverable: true
     },
-    raw_text: ""
+    raw_text: recovery.rawText
   });
 }
 
