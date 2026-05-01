@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildOverlayState, isOverlayRouteHash } from "./App";
+import { buildOverlayState, isOverlayRouteHash, saveSettingsAndRefreshHistory } from "./App";
 
 describe("buildOverlayState", () => {
   it("recognizes packaged overlay window hashes", () => {
@@ -165,5 +165,26 @@ describe("buildOverlayState", () => {
     );
 
     expect(overlayState).toEqual({ status: "finalizing" });
+  });
+});
+
+describe("saveSettingsAndRefreshHistory", () => {
+  it("refreshes visible history after retention settings prune rows", async () => {
+    const setSnapshot = vi.fn();
+    const setHistory = vi.fn();
+    const saveSettings = vi.fn().mockResolvedValue({ historyRetention: "never" });
+    const listHistory = vi.fn().mockResolvedValue([]);
+
+    await saveSettingsAndRefreshHistory({
+      settings: { historyRetention: "never" },
+      saveSettings,
+      listHistory,
+      setSnapshot,
+      setHistory
+    });
+
+    expect(saveSettings).toHaveBeenCalledWith({ historyRetention: "never" });
+    expect(listHistory).toHaveBeenCalledOnce();
+    expect(setHistory).toHaveBeenCalledWith([]);
   });
 });

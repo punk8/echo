@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { DictationState } from "@echo/shared";
 import { desktopApi, type AppStateSnapshot } from "./api/desktopApi";
 import { HubLayout, type HubPage } from "./components/HubLayout";
@@ -240,8 +240,13 @@ export function App() {
   }
 
   async function saveSettings(settings: Partial<EchoSettings>) {
-    const next = await desktopApi.saveSettings(settings);
-    setSnapshot((current) => ({ ...current, settings: next }));
+    await saveSettingsAndRefreshHistory({
+      settings,
+      saveSettings: desktopApi.saveSettings,
+      listHistory: desktopApi.listHistory,
+      setSnapshot,
+      setHistory
+    });
   }
 
   async function addDictionaryTerm(
@@ -317,6 +322,21 @@ export function App() {
 
 export function isOverlayRouteHash(hash: string) {
   return hash === "#overlay" || hash === "#/overlay";
+}
+
+export async function saveSettingsAndRefreshHistory(input: {
+  settings: Partial<EchoSettings>;
+  saveSettings: (settings: Partial<EchoSettings>) => Promise<EchoSettings>;
+  listHistory: () => Promise<HistoryRow[]>;
+  setSnapshot: Dispatch<SetStateAction<AppStateSnapshot>>;
+  setHistory: Dispatch<SetStateAction<HistoryRow[]>>;
+}) {
+  const next = await input.saveSettings(input.settings);
+  input.setSnapshot((current) => ({ ...current, settings: next }));
+  if (Object.prototype.hasOwnProperty.call(input.settings, "historyRetention")) {
+    input.setHistory(await input.listHistory());
+  }
+  return next;
 }
 
 export function buildOverlayState(
