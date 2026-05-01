@@ -330,7 +330,7 @@ Required states:
 
 - `idle`: hidden.
 - `recording`: waveform, elapsed time, cancel, finish.
-- `finalizing`: recording stopped, upload preparing.
+- `finalizing`: recording stopped, upload preparing, cancel available while recorder finalization is still pending.
 - `processing`: explicit label, activity indicator, provider stage text.
 - `inserting`: brief insertion label.
 - `complete`: short confirmation.

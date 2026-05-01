@@ -203,6 +203,9 @@ export function createDictationSessionController(deps: DictationSessionControlle
     try {
       recording = await deps.recorder.stop(session.sessionId);
     } catch (error) {
+      if (isRecorderCancellation(error, state, session.sessionId)) {
+        return getAppState();
+      }
       const recorderError = normalizeRecorderStopError(error);
       await maybeRestoreOtherAudio(session);
       state = {
@@ -484,6 +487,11 @@ function normalizeRecorderStopError(_error: unknown) {
     code: "audio.recording_failed",
     message: "Could not finish recording. Please try again."
   };
+}
+
+function isRecorderCancellation(error: unknown, state: DictationState, sessionId: string) {
+  const message = error instanceof Error ? error.message : "";
+  return state.status === "cancelled" && state.sessionId === sessionId && message === "audio.recording_cancelled";
 }
 
 function buildErrorOverlayInput(sessionId: string, error: BackendDictationError, retryHistoryId?: string) {

@@ -29,11 +29,12 @@ describe("Overlay", () => {
     expect(markup).toContain("Transcribing audio and refining text");
   });
 
-  it("shows finalizing state explicitly", () => {
-    const markup = renderToStaticMarkup(<Overlay state={{ status: "finalizing" }} />);
+  it("shows finalizing state explicitly with a cancel action", () => {
+    const markup = renderToStaticMarkup(<Overlay state={{ status: "finalizing", onCancel: vi.fn() }} />);
 
     expect(markup).toContain("Finalizing");
     expect(markup).toContain("Preparing audio");
+    expect(markup).toContain("Cancel");
   });
 
   it("shows a manual paste instruction when text was copied instead of inserted", () => {

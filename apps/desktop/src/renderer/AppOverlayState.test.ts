@@ -150,7 +150,8 @@ describe("buildOverlayState", () => {
     expect(overlayState).toEqual({ status: "copied" });
   });
 
-  it("maps finalizing overlay payloads to finalizing state", () => {
+  it("maps finalizing overlay payloads to cancellable finalizing state", () => {
+    const onCancel = vi.fn();
     const overlayState = buildOverlayState(
       { status: "recording", sessionId: "session-1" },
       {
@@ -160,11 +161,17 @@ describe("buildOverlayState", () => {
       [0.2],
       1200,
       vi.fn(),
-      vi.fn(),
+      onCancel,
       null
     );
 
-    expect(overlayState).toEqual({ status: "finalizing" });
+    if (overlayState.status !== "finalizing") {
+      throw new Error("expected finalizing overlay state");
+    }
+
+    overlayState.onCancel();
+
+    expect(onCancel).toHaveBeenCalledOnce();
   });
 
   it("maps processing overlay payload stage text", () => {

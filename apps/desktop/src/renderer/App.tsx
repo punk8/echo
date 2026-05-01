@@ -364,7 +364,7 @@ export function buildOverlayState(
   }
 
   if (overlayPayload?.status === "finalizing") {
-    return { status: "finalizing" };
+    return { status: "finalizing", onCancel };
   }
   if (overlayPayload?.status === "recording" || state.status === "recording") {
     return {
@@ -411,7 +411,7 @@ export function buildOverlayState(
     };
   }
   if (state.status === "finalizing") {
-    return { status: "finalizing" };
+    return { status: "finalizing", onCancel };
   }
   if (state.status === "processing") {
     return { status: "processing" };

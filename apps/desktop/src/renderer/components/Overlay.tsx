@@ -6,7 +6,7 @@ export type OverlayState =
       onCancel: () => void;
       onFinish: () => void;
     }
-  | { status: "finalizing" }
+  | { status: "finalizing"; onCancel: () => void }
   | { status: "processing"; stageText?: string }
   | { status: "inserting" }
   | { status: "copied" }
@@ -48,7 +48,16 @@ export function Overlay({ state }: { state: OverlayState }) {
         </>
       ) : null}
 
-      {state.status === "finalizing" ? <OverlayMessage title="Finalizing" detail="Preparing audio" /> : null}
+      {state.status === "finalizing" ? (
+        <>
+          <OverlayMessage title="Finalizing" detail="Preparing audio" />
+          <div className="overlay-actions">
+            <button type="button" className="ghost-button" onClick={state.onCancel}>
+              Cancel
+            </button>
+          </div>
+        </>
+      ) : null}
       {state.status === "processing" ? (
         <OverlayMessage title="Processing" detail={state.stageText ?? "Refining dictation"} />
       ) : null}

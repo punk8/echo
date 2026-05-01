@@ -111,6 +111,16 @@ function createDeps() {
   };
 }
 
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((innerResolve, innerReject) => {
+    resolve = innerResolve;
+    reject = innerReject;
+  });
+  return { promise, resolve, reject };
+}
+
 describe("createDictationSessionController", () => {
   it("starting from idle creates a session and requests recorder start", async () => {
     const { deps } = createDeps();
@@ -375,6 +385,36 @@ describe("createDictationSessionController", () => {
       provider_llm: "not_started",
       error_code: "dictation.cancelled",
       timing_json: "{}"
+    });
+  });
+
+  it("keeps finalizing cancellation from being overwritten by a cancelled recorder stop", async () => {
+    const { deps, historyRows } = createDeps();
+    const stop = createDeferred<{
+      audio: Buffer;
+      audioFormat: "webm";
+      durationMs: number;
+      localPath: string;
+    }>();
+    deps.recorder.stop.mockReturnValueOnce(stop.promise);
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+    const stopSnapshot = controller.stopDictation();
+    await Promise.resolve();
+    const cancelSnapshot = await controller.cancelDictation();
+    stop.reject(new Error("audio.recording_cancelled"));
+    await stopSnapshot;
+
+    expect(cancelSnapshot.state).toEqual({ status: "cancelled", sessionId: "session-1" });
+    expect(deps.overlay.showError).not.toHaveBeenCalledWith(
+      expect.objectContaining({ code: "audio.recording_failed" })
+    );
+    expect(deps.backend).not.toHaveBeenCalled();
+    expect(historyRows).toHaveLength(1);
+    expect(historyRows[0]).toMatchObject({
+      status: "cancelled",
+      error_code: "dictation.cancelled"
     });
   });
 
