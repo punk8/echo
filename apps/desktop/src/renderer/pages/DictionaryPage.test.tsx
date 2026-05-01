@@ -51,11 +51,15 @@ describe("DictionaryPage", () => {
       ...manual,
       id: "term-2",
       term: "Typeless",
+      aliases: ["voice app"],
+      pronunciation_hint: "TYPE-less",
       source: "learned" as const
     };
 
     expect(filterDictionaryTerms([manual, learned], "", "manual")).toEqual([manual]);
     expect(filterDictionaryTerms([manual, learned], "", "learned")).toEqual([learned]);
     expect(filterDictionaryTerms([manual, learned], "type", "all")).toEqual([learned]);
+    expect(filterDictionaryTerms([manual, learned], "voice", "all")).toEqual([learned]);
+    expect(filterDictionaryTerms([manual, learned], "less", "all")).toEqual([learned]);
   });
 });

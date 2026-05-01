@@ -128,9 +128,16 @@ export function filterDictionaryTerms(terms: DictionaryTermRow[], query: string,
   const normalizedQuery = query.trim().toLowerCase();
   return terms.filter((item) => {
     const matchesSource = sourceFilter === "all" || item.source === sourceFilter;
-    const matchesQuery = !normalizedQuery || item.term.toLowerCase().includes(normalizedQuery);
+    const matchesQuery = !normalizedQuery || searchableDictionaryText(item).includes(normalizedQuery);
     return matchesSource && matchesQuery;
   });
+}
+
+function searchableDictionaryText(item: DictionaryTermRow) {
+  return [item.term, ...item.aliases, item.pronunciation_hint, item.capitalization, item.language]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
 }
 
 function splitAliases(value: string) {
