@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildOverlayState } from "./App";
+import { buildOverlayState, isOverlayRouteHash } from "./App";
 
 describe("buildOverlayState", () => {
+  it("recognizes packaged overlay window hashes", () => {
+    expect(isOverlayRouteHash("#overlay")).toBe(true);
+    expect(isOverlayRouteHash("#/overlay")).toBe(true);
+    expect(isOverlayRouteHash("#settings")).toBe(false);
+  });
+
   it("copies recoverable text from overlay errors when available", () => {
     const writeClipboard = vi.fn();
     const overlayState = buildOverlayState(

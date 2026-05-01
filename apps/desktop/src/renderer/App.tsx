@@ -30,7 +30,7 @@ const defaultSettings: EchoSettings = {
 };
 
 export function App() {
-  const [page, setPage] = useState<HubPage>(location.hash === "#/overlay" ? "home" : "home");
+  const [page, setPage] = useState<HubPage>("home");
   const [snapshot, setSnapshot] = useState<AppStateSnapshot>({ state: { status: "idle" }, settings: defaultSettings });
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [dictionary, setDictionary] = useState<DictionaryTermRow[]>([]);
@@ -53,7 +53,7 @@ export function App() {
   const snapshotRef = useRef(snapshot);
   const recorderRef = useRef<AudioRecorder | null>(null);
 
-  const isOverlayRoute = location.hash === "#/overlay";
+  const isOverlayRoute = isOverlayRouteHash(location.hash);
 
   useEffect(() => {
     snapshotRef.current = snapshot;
@@ -311,6 +311,10 @@ export function App() {
       await requestAccessibilityPermission();
     }
   }
+}
+
+export function isOverlayRouteHash(hash: string) {
+  return hash === "#overlay" || hash === "#/overlay";
 }
 
 export function buildOverlayState(
