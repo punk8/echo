@@ -17,7 +17,8 @@ export function DictionaryPage({
     aliases: string[],
     pronunciationHint: string | null,
     capitalization: string | null,
-    language: string
+    language: string,
+    caseSensitive: boolean
   ) => void;
   onUpdate: (term: DictionaryTermRow) => void;
   onDelete: (id: string) => void;
@@ -28,6 +29,7 @@ export function DictionaryPage({
   const [pronunciationHint, setPronunciationHint] = useState("");
   const [capitalization, setCapitalization] = useState("");
   const [language, setLanguage] = useState(defaultLanguage);
+  const [caseSensitive, setCaseSensitive] = useState(true);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const filtered = useMemo(() => filterDictionaryTerms(terms, query, sourceFilter), [query, sourceFilter, terms]);
 
@@ -49,13 +51,15 @@ export function DictionaryPage({
                 splitAliases(aliases),
                 normalizeOptionalField(pronunciationHint),
                 normalizeOptionalField(capitalization),
-                normalizeLanguage(language)
+                normalizeLanguage(language),
+                caseSensitive
               );
               setTerm("");
               setAliases("");
               setPronunciationHint("");
               setCapitalization("");
               setLanguage(defaultLanguage);
+              setCaseSensitive(true);
             }
           }}
         >
@@ -79,6 +83,14 @@ export function DictionaryPage({
             aria-label="Capitalization"
           />
           <input value={language} onChange={(event) => setLanguage(event.target.value)} placeholder="Language" aria-label="Language" />
+          <label className="compact-toggle">
+            <input
+              type="checkbox"
+              checked={caseSensitive}
+              onChange={(event) => setCaseSensitive(event.target.checked)}
+            />
+            Case sensitive
+          </label>
           <button type="submit">Add</button>
         </form>
       </header>
@@ -152,7 +164,8 @@ function formatTermDetail(item: DictionaryTermRow) {
     item.aliases.join(", "),
     item.pronunciation_hint ? `Pronunciation: ${item.pronunciation_hint}` : "",
     item.capitalization ? `Capitalization: ${item.capitalization}` : "",
-    item.language
+    item.language,
+    item.case_sensitive ? "Case sensitive" : "Case insensitive"
   ]
     .filter(Boolean)
     .join(" · ");
@@ -186,12 +199,17 @@ function promptDictionaryUpdate(item: DictionaryTermRow): DictionaryTermRow {
   const nextCapitalization =
     window.prompt("Capitalization", item.capitalization ?? "") ?? item.capitalization ?? "";
   const nextLanguage = window.prompt("Language", item.language) ?? item.language;
+  const nextCaseSensitive =
+    (window.prompt("Case sensitive? Enter yes or no.", item.case_sensitive ? "yes" : "no") ?? (item.case_sensitive ? "yes" : "no"))
+      .trim()
+      .toLowerCase() !== "no";
   return {
     ...item,
     term: nextTerm,
     aliases: splitAliases(nextAliases),
     pronunciation_hint: normalizeOptionalField(nextPronunciation),
     capitalization: normalizeOptionalField(nextCapitalization),
-    language: normalizeLanguage(nextLanguage)
+    language: normalizeLanguage(nextLanguage),
+    case_sensitive: nextCaseSensitive
   };
 }

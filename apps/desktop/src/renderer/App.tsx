@@ -174,8 +174,8 @@ export function App() {
         <DictionaryPage
           terms={dictionary}
           defaultLanguage={snapshot.settings.language}
-          onAdd={(term, aliases, pronunciationHint, capitalization, language) =>
-            void addDictionaryTerm(term, aliases, pronunciationHint, capitalization, language)
+          onAdd={(term, aliases, pronunciationHint, capitalization, language, caseSensitive) =>
+            void addDictionaryTerm(term, aliases, pronunciationHint, capitalization, language, caseSensitive)
           }
           onUpdate={(item) => void updateDictionaryTerm(item)}
           onDelete={(id) => void deleteDictionaryTerm(id)}
@@ -254,13 +254,14 @@ export function App() {
     aliases: string[],
     pronunciationHint: string | null,
     capitalization: string | null,
-    language: string
+    language: string,
+    caseSensitive: boolean
   ) {
     await desktopApi.addDictionaryTerm({
       id: crypto.randomUUID(),
       term,
       aliases,
-      case_sensitive: true,
+      case_sensitive: caseSensitive,
       source: "manual",
       language,
       pronunciation_hint: pronunciationHint,

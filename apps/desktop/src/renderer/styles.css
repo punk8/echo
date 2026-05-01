@@ -279,6 +279,7 @@ h2 {
 
 .field-inline,
 .add-term,
+.compact-toggle,
 .settings-grid label {
   display: flex;
   align-items: center;
@@ -311,6 +312,15 @@ select {
   padding: 7px 9px;
   color: #22313d;
   background: rgba(255, 255, 255, 0.82);
+}
+
+.compact-toggle {
+  min-height: 34px;
+  white-space: nowrap;
+}
+
+.compact-toggle input {
+  min-height: auto;
 }
 
 .search-input {
