@@ -204,6 +204,7 @@ Fields:
     "app_name": "TextEdit",
     "bundle_id": "com.apple.TextEdit",
     "window_title": "Untitled",
+    "focused_role": "AXTextArea",
     "writable": true,
     "selection_present": false,
     "nearby_text": ""

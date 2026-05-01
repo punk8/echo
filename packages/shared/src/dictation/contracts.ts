@@ -9,6 +9,7 @@ export const DictationContextSchema = z.object({
   app_name: z.string().min(1),
   bundle_id: z.string().min(1),
   window_title: z.string(),
+  focused_role: z.string().optional(),
   writable: z.boolean(),
   selection_present: z.boolean(),
   nearby_text: z.string()

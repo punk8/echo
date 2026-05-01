@@ -12,6 +12,7 @@ describe("dictation contracts", () => {
         app_name: "TextEdit",
         bundle_id: "com.apple.TextEdit",
         window_title: "Untitled",
+        focused_role: "AXTextArea",
         writable: true,
         selection_present: false,
         nearby_text: ""
@@ -39,6 +40,7 @@ describe("dictation contracts", () => {
     expect(result.dictionary[0]?.pronunciation_hint).toBe("EH-koh");
     expect(result.dictionary[0]?.capitalization).toBe("Echo");
     expect(result.dictionary[0]?.language).toBe("en");
+    expect(result.context.focused_role).toBe("AXTextArea");
   });
 
   it("rejects unsupported audio formats before provider calls", () => {

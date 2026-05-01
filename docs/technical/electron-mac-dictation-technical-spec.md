@@ -211,6 +211,7 @@ Context fields:
 - Active app name.
 - Active app bundle id.
 - Front window title.
+- Focused accessibility role.
 - Browser URL/domain/title when safely available.
 - Focused element writable status.
 - Optional nearby text only if accessible and bounded.

@@ -20,6 +20,7 @@ export function buildFallbackContext(input: ActiveApplicationInput = {}): Dictat
     app_name: appName,
     bundle_id: sanitize(input.bundleId) ?? `unknown.${slugify(appName)}`,
     window_title: sanitize(input.windowTitle) ?? "",
+    ...(input.focusedRole ? { focused_role: input.focusedRole } : {}),
     writable: resolveWritable(input),
     selection_present: input.selectionPresent ?? false,
     nearby_text: input.nearbyText ?? ""

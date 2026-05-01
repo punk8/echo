@@ -13,6 +13,7 @@ describe("buildFallbackContext", () => {
     const context = buildFallbackContext({ appName: "TextEdit", focusedRole: "AXTextArea" });
 
     expect(context.writable).toBe(true);
+    expect(context.focused_role).toBe("AXTextArea");
   });
 
   it("marks focused non-text controls as not writable when accessibility role is available", () => {
