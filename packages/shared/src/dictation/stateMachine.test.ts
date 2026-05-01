@@ -20,6 +20,23 @@ describe("dictation state machine", () => {
     );
   });
 
+  it("allows a new dictation after terminal states", () => {
+    expect(applyDictationEvent({ status: "complete", sessionId: "s1" }, { type: "prepare" })).toEqual({
+      status: "preparing"
+    });
+    expect(applyDictationEvent({ status: "cancelled", sessionId: "s1" }, { type: "prepare" })).toEqual({
+      status: "preparing"
+    });
+    expect(
+      applyDictationEvent(
+        { status: "error", sessionId: "s1", code: "server.asr_failed", message: "Speech recognition failed." },
+        { type: "prepare" }
+      )
+    ).toEqual({
+      status: "preparing"
+    });
+  });
+
   it("keeps error code and message in error state", () => {
     const state = applyDictationEvent(
       { status: "processing", sessionId: "s1" },

@@ -36,7 +36,7 @@ export function applyDictationEvent(state: DictationState, event: DictationEvent
 
   switch (event.type) {
     case "prepare":
-      if (state.status !== "idle") {
+      if (!canPrepare(state)) {
         throw new Error(`Cannot prepare from ${state.status}`);
       }
       return { status: "preparing" };
@@ -77,4 +77,8 @@ export function applyDictationEvent(state: DictationState, event: DictationEvent
       }
       throw new Error(`Cannot cancel from ${state.status}`);
   }
+}
+
+function canPrepare(state: DictationState) {
+  return state.status === "idle" || state.status === "complete" || state.status === "cancelled" || state.status === "error";
 }
