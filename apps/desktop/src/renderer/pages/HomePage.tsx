@@ -74,10 +74,24 @@ export function HomePage({
 }
 
 function formatProviderDetail(providerStatus: ProviderStatus) {
+  if (providerStatus.errorCode) {
+    return formatProviderError(providerStatus.errorCode);
+  }
   if (providerStatus.asr && providerStatus.llm) {
     return `${providerStatus.asr} / ${providerStatus.llm}`;
   }
   return providerStatus.apiBaseUrl;
+}
+
+function formatProviderError(errorCode: string) {
+  switch (errorCode) {
+    case "config.llm_missing":
+      return "LLM configuration missing";
+    case "config.asr_missing":
+      return "ASR configuration missing";
+    default:
+      return `Provider startup error: ${errorCode}`;
+  }
 }
 
 function formatTime(value: string) {

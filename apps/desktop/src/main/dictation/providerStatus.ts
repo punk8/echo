@@ -3,10 +3,12 @@ export interface ProviderStatus {
   apiBaseUrl: string;
   asr?: string;
   llm?: string;
+  errorCode?: string;
 }
 
 export interface ProviderStatusInput {
   apiBaseUrl: string;
+  startupError?: string;
   fetchImpl?: (url: string) => Promise<{ ok: boolean; json?: () => Promise<unknown> }>;
 }
 
@@ -18,12 +20,14 @@ export async function checkProviderStatus(input: ProviderStatusInput): Promise<P
     return {
       reachable: response.ok,
       apiBaseUrl: input.apiBaseUrl,
+      ...(!response.ok && input.startupError ? { errorCode: input.startupError } : {}),
       ...metadata
     };
   } catch {
     return {
       reachable: false,
-      apiBaseUrl: input.apiBaseUrl
+      apiBaseUrl: input.apiBaseUrl,
+      ...(input.startupError ? { errorCode: input.startupError } : {})
     };
   }
 }

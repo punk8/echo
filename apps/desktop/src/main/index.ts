@@ -111,7 +111,11 @@ if (!gotLock) {
     });
     const dictationHandlers = {
       ...controller,
-      getProviderStatus: () => checkProviderStatus({ apiBaseUrl: runtime.apiBaseUrl })
+      getProviderStatus: () =>
+        checkProviderStatus({
+          apiBaseUrl: runtime.apiBaseUrl,
+          ...(runtime.startupError ? { startupError: runtime.startupError } : {})
+        })
     };
 
     const shortcutController = createDictationShortcutController({

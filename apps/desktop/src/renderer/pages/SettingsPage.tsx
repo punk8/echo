@@ -177,10 +177,24 @@ function withSelectedMicrophone(selectedId: string, devices: MicrophoneDevice[])
 }
 
 function formatProviderDetail(providerStatus: ProviderStatus) {
+  if (providerStatus.errorCode) {
+    return formatProviderError(providerStatus.errorCode);
+  }
   if (providerStatus.asr && providerStatus.llm) {
     return `${providerStatus.asr} / ${providerStatus.llm}`;
   }
   return providerStatus.apiBaseUrl;
+}
+
+function formatProviderError(errorCode: string) {
+  switch (errorCode) {
+    case "config.llm_missing":
+      return "LLM configuration missing. Set LLM_MODEL and LLM_API_KEY.";
+    case "config.asr_missing":
+      return "ASR configuration missing. Set ASR_API_KEY or API_KEY.";
+    default:
+      return `Provider startup error: ${errorCode}`;
+  }
 }
 
 function formatRetention(value: EchoSettings["historyRetention"]) {

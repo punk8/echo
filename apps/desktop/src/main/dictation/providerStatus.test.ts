@@ -30,4 +30,20 @@ describe("checkProviderStatus", () => {
       apiBaseUrl: "http://127.0.0.1:43110"
     });
   });
+
+  it("includes local startup errors when the API is unreachable", async () => {
+    const fetchImpl = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+
+    await expect(
+      checkProviderStatus({
+        apiBaseUrl: "http://127.0.0.1:43110",
+        startupError: "config.llm_missing",
+        fetchImpl
+      })
+    ).resolves.toEqual({
+      reachable: false,
+      apiBaseUrl: "http://127.0.0.1:43110",
+      errorCode: "config.llm_missing"
+    });
+  });
 });

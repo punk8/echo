@@ -66,7 +66,6 @@ describe("ensureLocalApiRuntime", () => {
       ["--filter", "@echo/api", "exec", "tsx", "src/index.ts"],
       expect.objectContaining({
         cwd: "/workspace/echo",
-        stdio: "ignore",
         env: expect.objectContaining({
           API_HOST: "127.0.0.1",
           API_PORT: "43110"
@@ -76,5 +75,32 @@ describe("ensureLocalApiRuntime", () => {
 
     runtime.stop();
     expect(child.kill).toHaveBeenCalled();
+  });
+
+  it("captures local API startup configuration errors", async () => {
+    const child = {
+      kill: vi.fn(),
+      on: vi.fn(),
+      stderr: {
+        on: vi.fn((_event: "data", listener: (chunk: Buffer) => void) => {
+          listener(
+            Buffer.from('throw new Error(first?.message ?? "config.invalid");\nError: config.llm_missing')
+          );
+        })
+      }
+    };
+    const spawn = vi.fn(() => child);
+    const fetchImpl = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+
+    const runtime = await ensureLocalApiRuntime({
+      env: { API_HOST: "127.0.0.1", API_PORT: "43110" },
+      cwd: "/workspace/echo/apps/desktop",
+      workspaceRoot: "/workspace/echo",
+      spawn,
+      fetchImpl,
+      sleep: vi.fn().mockResolvedValue(undefined)
+    });
+
+    expect(runtime.startupError).toBe("config.llm_missing");
   });
 });

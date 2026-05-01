@@ -5,6 +5,7 @@ import path from "node:path";
 export interface LocalApiRuntime {
   apiBaseUrl: string;
   managed: boolean;
+  startupError?: string;
   stop: () => void;
 }
 
@@ -16,7 +17,7 @@ export interface EnsureLocalApiRuntimeInput {
   spawn?: (
     command: string,
     args: string[],
-    options: { cwd: string; env: NodeJS.ProcessEnv; stdio: "ignore" }
+    options: { cwd: string; env: NodeJS.ProcessEnv; stdio: ["ignore", "ignore", "pipe"] }
   ) => ManagedChildProcess;
   sleep?: (ms: number) => Promise<void>;
 }
@@ -24,6 +25,9 @@ export interface EnsureLocalApiRuntimeInput {
 interface ManagedChildProcess {
   kill: () => unknown;
   on?: (event: "error" | "exit", listener: (...args: unknown[]) => void) => unknown;
+  stderr?: {
+    on: (event: "data", listener: (chunk: Buffer) => void) => unknown;
+  };
 }
 
 const defaultHost = "127.0.0.1";
@@ -58,6 +62,7 @@ export async function ensureLocalApiRuntime(input: EnsureLocalApiRuntimeInput = 
 
   const workspaceRoot = input.workspaceRoot ?? findWorkspaceRoot(input.cwd ?? process.cwd());
   const spawn = input.spawn ?? spawnChild;
+  let startupError: string | undefined;
   const child = spawn("pnpm", ["--filter", "@echo/api", "exec", "tsx", "src/index.ts"], {
     cwd: workspaceRoot,
     env: {
@@ -66,9 +71,12 @@ export async function ensureLocalApiRuntime(input: EnsureLocalApiRuntimeInput = 
       API_HOST: host,
       API_PORT: port
     },
-    stdio: "ignore"
+    stdio: ["ignore", "ignore", "pipe"]
   });
 
+  child.stderr?.on("data", (chunk) => {
+    startupError = startupError ?? parseStartupError(chunk.toString("utf8"));
+  });
   child.on?.("error", () => undefined);
   child.on?.("exit", () => undefined);
 
@@ -78,6 +86,7 @@ export async function ensureLocalApiRuntime(input: EnsureLocalApiRuntimeInput = 
   return {
     apiBaseUrl,
     managed: true,
+    ...(startupError ? { startupError } : {}),
     stop: () => {
       if (stopped) {
         return;
@@ -129,6 +138,11 @@ function findWorkspaceRoot(start: string) {
 function normalizeBlank(value: string | undefined) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function parseStartupError(message: string) {
+  const matches = Array.from(message.matchAll(/\bconfig\.[a-z_]+\b/g), (match) => match[0]);
+  return matches.find((match) => match !== "config.invalid") ?? matches[0];
 }
 
 function sleep(ms: number) {

@@ -53,6 +53,25 @@ describe("SettingsPage", () => {
     expect(markup).toContain("http://127.0.0.1:43110");
   });
 
+  it("shows actionable provider configuration errors", () => {
+    const markup = renderToStaticMarkup(
+      <SettingsPage
+        settings={settings}
+        providerStatus={{
+          reachable: false,
+          apiBaseUrl: "http://127.0.0.1:43110",
+          errorCode: "config.llm_missing"
+        }}
+        onSave={vi.fn()}
+        onRestoreDefaultShortcut={vi.fn()}
+      />
+    );
+
+    expect(markup).toContain("LLM configuration missing");
+    expect(markup).toContain("LLM_MODEL");
+    expect(markup).not.toContain("replace-with-local-secret");
+  });
+
   it("explains cloud processing and local retention without exposing secrets", () => {
     const markup = renderToStaticMarkup(
       <SettingsPage
