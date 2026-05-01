@@ -41,7 +41,7 @@ export class OpenAICompatibleLLMProvider implements LLMProvider {
       });
 
       if (!response.ok) {
-        throw new Error("provider error");
+        throw providerStatusError(response.status);
       }
 
       const payload = (await response.json()) as {
@@ -57,8 +57,35 @@ export class OpenAICompatibleLLMProvider implements LLMProvider {
         provider: `openai-compatible:${this.model}`,
         durationMs: Math.round(performance.now() - startedAt)
       };
-    } catch {
-      throw new Error("server.refine_failed");
+    } catch (error) {
+      throw normalizeCompletionError(error);
     }
   }
+}
+
+function providerStatusError(status: number) {
+  if (status === 429) {
+    return new Error("server.provider_rate_limited");
+  }
+  if (status === 408 || status === 504) {
+    return new Error("server.provider_timeout");
+  }
+  return new Error("server.refine_failed");
+}
+
+function normalizeCompletionError(error: unknown) {
+  if (error instanceof Error) {
+    if (
+      error.message === "server.provider_rate_limited" ||
+      error.message === "server.provider_timeout" ||
+      error.message === "server.refine_failed"
+    ) {
+      return error;
+    }
+    if (error.name === "AbortError" || /timeout/i.test(error.message)) {
+      return new Error("server.provider_timeout");
+    }
+  }
+
+  return new Error("server.refine_failed");
 }

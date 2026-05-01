@@ -59,4 +59,72 @@ describe("OpenAITranscribeProvider", () => {
       })
     ).rejects.toThrow("server.asr_failed");
   });
+
+  it("maps empty transcription to audio.no_speech_detected", async () => {
+    const provider = new OpenAITranscribeProvider({
+      apiKey: "secret",
+      baseUrl: "https://api.openai.com/v1",
+      model: "gpt-4o-transcribe",
+      client: {
+        audio: {
+          transcriptions: {
+            create: vi.fn().mockResolvedValue({ text: "" })
+          }
+        }
+      }
+    });
+
+    await expect(
+      provider.transcribe({
+        audio: Buffer.from("audio"),
+        filename: "dictation.wav",
+        mimeType: "audio/wav",
+        language: "auto"
+      })
+    ).rejects.toThrow("audio.no_speech_detected");
+  });
+
+  it("maps rate limits and timeouts to specific provider errors", async () => {
+    const rateLimited = new OpenAITranscribeProvider({
+      apiKey: "secret",
+      baseUrl: "https://api.openai.com/v1",
+      model: "gpt-4o-transcribe",
+      client: {
+        audio: {
+          transcriptions: {
+            create: vi.fn().mockRejectedValue(Object.assign(new Error("rate limited"), { status: 429 }))
+          }
+        }
+      }
+    });
+    const timedOut = new OpenAITranscribeProvider({
+      apiKey: "secret",
+      baseUrl: "https://api.openai.com/v1",
+      model: "gpt-4o-transcribe",
+      client: {
+        audio: {
+          transcriptions: {
+            create: vi.fn().mockRejectedValue(Object.assign(new Error("timeout"), { name: "AbortError" }))
+          }
+        }
+      }
+    });
+
+    await expect(
+      rateLimited.transcribe({
+        audio: Buffer.from("audio"),
+        filename: "dictation.wav",
+        mimeType: "audio/wav",
+        language: "auto"
+      })
+    ).rejects.toThrow("server.provider_rate_limited");
+    await expect(
+      timedOut.transcribe({
+        audio: Buffer.from("audio"),
+        filename: "dictation.wav",
+        mimeType: "audio/wav",
+        language: "auto"
+      })
+    ).rejects.toThrow("server.provider_timeout");
+  });
 });

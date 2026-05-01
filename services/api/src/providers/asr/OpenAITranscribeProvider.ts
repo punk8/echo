@@ -52,8 +52,8 @@ export class OpenAITranscribeProvider implements ASRProvider {
       }
 
       const response = await this.client.audio.transcriptions.create(request);
-      if (!response.text) {
-        throw new Error("empty transcription");
+      if (!response.text?.trim()) {
+        throw new Error("audio.no_speech_detected");
       }
 
       return {
@@ -62,8 +62,30 @@ export class OpenAITranscribeProvider implements ASRProvider {
         provider: `openai:${this.model}`,
         durationMs: Math.round(performance.now() - startedAt)
       };
-    } catch {
-      throw new Error("server.asr_failed");
+    } catch (error) {
+      throw normalizeTranscriptionError(error);
     }
   }
+}
+
+function normalizeTranscriptionError(error: unknown) {
+  if (error instanceof Error && error.message === "audio.no_speech_detected") {
+    return error;
+  }
+
+  const status = typeof error === "object" && error ? (error as { status?: unknown }).status : undefined;
+  if (status === 429) {
+    return new Error("server.provider_rate_limited");
+  }
+  if (status === 408 || status === 504) {
+    return new Error("server.provider_timeout");
+  }
+  if (status === 413) {
+    return new Error("server.audio_too_large");
+  }
+  if (error instanceof Error && (error.name === "AbortError" || /timeout/i.test(error.message))) {
+    return new Error("server.provider_timeout");
+  }
+
+  return new Error("server.asr_failed");
 }

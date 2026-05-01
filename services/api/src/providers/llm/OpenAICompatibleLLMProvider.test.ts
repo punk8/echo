@@ -63,4 +63,31 @@ describe("OpenAICompatibleLLMProvider", () => {
       })
     ).rejects.toThrow("server.refine_failed");
   });
+
+  it("maps rate limits and timeouts to specific provider errors", async () => {
+    const rateLimited = new OpenAICompatibleLLMProvider({
+      apiKey: "secret",
+      baseUrl: "https://api.openai.com/v1",
+      model: "gpt-4o",
+      fetchImpl: vi.fn().mockResolvedValue({ ok: false, status: 429, json: async () => ({}) })
+    });
+    const timedOut = new OpenAICompatibleLLMProvider({
+      apiKey: "secret",
+      baseUrl: "https://api.openai.com/v1",
+      model: "gpt-4o",
+      fetchImpl: vi.fn().mockRejectedValue(Object.assign(new Error("timeout"), { name: "AbortError" }))
+    });
+
+    const input = {
+      messages: [
+        { role: "system" as const, content: "Return JSON" },
+        { role: "user" as const, content: "raw" }
+      ],
+      temperature: 0.2,
+      responseFormat: "json_object" as const
+    };
+
+    await expect(rateLimited.complete(input)).rejects.toThrow("server.provider_rate_limited");
+    await expect(timedOut.complete(input)).rejects.toThrow("server.provider_timeout");
+  });
 });

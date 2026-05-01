@@ -196,6 +196,18 @@ function statusForError(code: string) {
   if (code.startsWith("missing.") || code === "server.unsupported_audio_format") {
     return 400;
   }
+  if (code === "audio.no_speech_detected") {
+    return 422;
+  }
+  if (code === "server.provider_rate_limited") {
+    return 429;
+  }
+  if (code === "server.audio_too_large") {
+    return 413;
+  }
+  if (code === "server.provider_timeout") {
+    return 504;
+  }
   return 500;
 }
 
@@ -208,6 +220,18 @@ function messageForCode(code: string) {
   }
   if (code === "server.unsupported_audio_format") {
     return "Unsupported audio format.";
+  }
+  if (code === "audio.no_speech_detected") {
+    return "No speech was detected. Try again closer to the microphone.";
+  }
+  if (code === "server.provider_rate_limited") {
+    return "Provider rate limit reached. Try again shortly.";
+  }
+  if (code === "server.provider_timeout") {
+    return "Provider request timed out. Try again.";
+  }
+  if (code === "server.audio_too_large") {
+    return "Recording is too large. Try a shorter dictation.";
   }
   return "Dictation processing failed.";
 }

@@ -150,4 +150,59 @@ describe("POST /v1/dictation/process", () => {
       raw_text: "um tomorrow at seven no make it three"
     });
   });
+
+  it("returns specific messages for provider rate limits", async () => {
+    const app = buildServer({
+      asr: {
+        transcribe: async () => {
+          throw new Error("server.provider_rate_limited");
+        }
+      },
+      llm: {
+        complete: async () => {
+          throw new Error("server.refine_failed");
+        }
+      }
+    });
+
+    const multipart = multipartBody([
+      { name: "session_id", value: "session-1" },
+      { name: "audio_format", value: "webm" },
+      { name: "duration_ms", value: "1200" },
+      { name: "language", value: "auto" },
+      {
+        name: "context",
+        value: JSON.stringify({
+          app_name: "TextEdit",
+          bundle_id: "com.apple.TextEdit",
+          window_title: "Untitled",
+          writable: true,
+          selection_present: false,
+          nearby_text: ""
+        })
+      },
+      {
+        name: "dictionary",
+        value: JSON.stringify([{ term: "Echo", aliases: [], case_sensitive: true, source: "manual" }])
+      },
+      {
+        name: "preferences",
+        value: JSON.stringify({ style: "balanced", output_language: "follow_input", format_lists: true })
+      },
+      { name: "audio", filename: "dictation.webm", contentType: "audio/webm", value: "audio-bytes" }
+    ]);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/dictation/process",
+      payload: multipart.body,
+      headers: multipart.headers
+    });
+
+    expect(response.statusCode).toBe(429);
+    expect(response.json().error).toMatchObject({
+      code: "server.provider_rate_limited",
+      message: "Provider rate limit reached. Try again shortly."
+    });
+  });
 });
