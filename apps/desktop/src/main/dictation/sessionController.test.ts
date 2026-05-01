@@ -479,6 +479,24 @@ describe("createDictationSessionController", () => {
     });
   });
 
+  it("falls back to copying refined text when insertion throws", async () => {
+    const { deps, historyRows } = createDeps();
+    deps.insertText.mockRejectedValueOnce(new Error("insert failed"));
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+    const snapshot = await controller.stopDictation();
+
+    expect(deps.copyText).toHaveBeenCalledWith("Tomorrow at three.");
+    expect(deps.overlay.showCopied).toHaveBeenCalledWith({ sessionId: "session-1" });
+    expect(historyRows[0]).toMatchObject({
+      status: "completed",
+      insertion_method: "clipboard",
+      insertion_status: "copied"
+    });
+    expect(snapshot.state).toEqual({ status: "complete", sessionId: "session-1" });
+  });
+
   it("passes the configured output style to backend refinement preferences", async () => {
     const { deps } = createDeps();
     deps.repositories.settings.getSettings.mockReturnValue({

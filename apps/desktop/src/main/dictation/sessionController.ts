@@ -235,9 +235,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
       state = applyDictationEvent(state, { type: "insert_started" });
       deps.overlay.showInserting({ sessionId: session.sessionId });
       const currentContext = await deps.captureContext();
-      const insertion = isSameInsertionTarget(session.context, currentContext)
-        ? await deps.insertText(response.refined_text)
-        : await deps.copyText(response.refined_text);
+      const insertion = await insertOrCopyRefinedText(response.refined_text, session.context, currentContext);
 
       await storeHistory(settings, buildCompletedHistoryRow({ session, recording, response, insertion }));
 
@@ -364,6 +362,22 @@ export function createDictationSessionController(deps: DictationSessionControlle
   function maybePlayInteractionSound(event: InteractionSoundEvent) {
     if (deps.repositories.settings.getSettings().interactionSounds) {
       deps.playInteractionSound?.(event);
+    }
+  }
+
+  async function insertOrCopyRefinedText(
+    refinedText: string,
+    startContext: DictationContext,
+    currentContext: DictationContext
+  ) {
+    if (!isSameInsertionTarget(startContext, currentContext)) {
+      return deps.copyText(refinedText);
+    }
+
+    try {
+      return await deps.insertText(refinedText);
+    } catch {
+      return deps.copyText(refinedText);
     }
   }
 
