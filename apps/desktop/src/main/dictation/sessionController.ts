@@ -103,7 +103,21 @@ export function createDictationSessionController(deps: DictationSessionControlle
       startedAt: deps.now()
     };
 
-    await deps.recorder.start(sessionId);
+    try {
+      await deps.recorder.start(sessionId);
+    } catch (error) {
+      const recorderError = normalizeRecorderStartError(error);
+      state = {
+        status: "error",
+        sessionId,
+        code: recorderError.code,
+        message: recorderError.message
+      };
+      currentSession = undefined;
+      deps.overlay.showError({ sessionId, code: recorderError.code, message: recorderError.message });
+      return getAppState();
+    }
+
     state = applyDictationEvent(state, { type: "recording_started", sessionId });
     deps.overlay.showRecording({ sessionId, context });
 
@@ -192,6 +206,21 @@ export function createDictationSessionController(deps: DictationSessionControlle
     deps.repositories.history.insertHistoryRow(row);
     deps.repositories.history.pruneHistory(settings.historyRetention);
   }
+}
+
+function normalizeRecorderStartError(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  if (/notallowed|permission|denied/i.test(message)) {
+    return {
+      code: "permission.microphone_missing",
+      message: "Microphone permission is required to start dictation."
+    };
+  }
+
+  return {
+    code: "audio.device_unavailable",
+    message: "No microphone input device is available."
+  };
 }
 
 function buildErrorOverlayInput(sessionId: string, error: BackendDictationError) {

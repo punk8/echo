@@ -128,6 +128,27 @@ describe("createDictationSessionController", () => {
     });
   });
 
+  it("reports microphone permission errors when recorder start fails", async () => {
+    const { deps } = createDeps();
+    deps.recorder.start.mockRejectedValueOnce(new Error("NotAllowedError: Permission denied"));
+    const controller = createDictationSessionController(deps);
+
+    const snapshot = await controller.startDictation();
+
+    expect(deps.overlay.showRecording).not.toHaveBeenCalled();
+    expect(deps.overlay.showError).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      code: "permission.microphone_missing",
+      message: "Microphone permission is required to start dictation."
+    });
+    expect(snapshot.state).toEqual({
+      status: "error",
+      sessionId: "session-1",
+      code: "permission.microphone_missing",
+      message: "Microphone permission is required to start dictation."
+    });
+  });
+
   it("stopping from recording processes audio, inserts refined text, and writes history", async () => {
     const { deps, historyRows } = createDeps();
     const controller = createDictationSessionController(deps);
