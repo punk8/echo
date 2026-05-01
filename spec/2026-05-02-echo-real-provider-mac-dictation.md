@@ -56,8 +56,8 @@ Configuration:
 
 - `ASR_PROVIDER`: `openai`
 - `ASR_MODEL`: `gpt-4o-transcribe`
-- `ASR_BASE_URL`: `https://api.openai.com/v1`
-- `ASR_API_KEY`: required local secret value supplied through `.env`
+- `ASR_BASE_URL`: defaults to `https://api.openai.com/v1`
+- `ASR_API_KEY`: required local secret value supplied through `.env`, unless shared `API_KEY` is set
 - `ASR_LANGUAGE`: `auto`
 
 Runtime behavior:
@@ -89,8 +89,8 @@ Required configuration:
 
 - `LLM_PROVIDER`: `openai-compatible`
 - `LLM_MODEL`: required local model id supplied through `.env`
-- `LLM_BASE_URL`: required local provider base URL supplied through `.env`
-- `LLM_API_KEY`: required local secret value supplied through `.env`
+- `LLM_BASE_URL`: defaults to `https://api.openai.com/v1`; set this only for another OpenAI-compatible provider
+- `LLM_API_KEY`: required local secret value supplied through `.env`, unless shared `API_KEY` is set
 - `LLM_TEMPERATURE`: `0.2`
 
 Runtime behavior:

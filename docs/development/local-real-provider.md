@@ -5,9 +5,11 @@ Echo does not ship a production mock provider. Local development expects a real 
 ## Setup
 
 1. Copy `.env.example` to `.env`.
-2. Fill `ASR_API_KEY`, `LLM_MODEL`, `LLM_BASE_URL`, and `LLM_API_KEY`.
-3. Keep `ASR_PROVIDER=openai` and `ASR_MODEL=gpt-4o-transcribe`.
-4. Do not commit `.env`.
+2. Fill `LLM_MODEL`.
+3. Fill either shared `API_KEY` or both provider-specific keys, `ASR_API_KEY` and `LLM_API_KEY`.
+4. Leave `ASR_BASE_URL` and `LLM_BASE_URL` at the OpenAI default unless you are using another OpenAI-compatible LLM endpoint.
+5. Keep `ASR_PROVIDER=openai` and `ASR_MODEL=gpt-4o-transcribe`.
+6. Do not commit `.env`.
 
 ## Run
 
