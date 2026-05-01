@@ -1,1 +1,23 @@
 .DS_Store
+
+# Local secrets and machine-specific configuration
+.env
+.env.*
+!.env.example
+
+# Node/Electron dependencies and build output
+node_modules/
+dist/
+out/
+build/
+release/
+coverage/
+.vite/
+.turbo/
+
+# Local runtime data
+*.log
+*.sqlite
+*.sqlite3
+recordings/
+Recordings/
