@@ -1,4 +1,4 @@
-import { systemPreferences } from "electron";
+import { shell, systemPreferences } from "electron";
 
 export type PermissionValue = "granted" | "denied" | "restricted" | "unknown" | "not-determined";
 
@@ -13,7 +13,13 @@ export interface PermissionDeps {
     askForMediaAccess?: (mediaType: "microphone") => Promise<boolean>;
     isTrustedAccessibilityClient: (prompt: boolean) => boolean;
   };
+  shell?: {
+    openExternal: (url: string) => Promise<unknown>;
+  };
 }
+
+const microphoneSettingsUrl = "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone";
+const accessibilitySettingsUrl = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility";
 
 export function getPermissionStatus(deps: PermissionDeps = {}): PermissionStatusSnapshot {
   const preferences = deps.systemPreferences ?? systemPreferences;
@@ -25,12 +31,22 @@ export function getPermissionStatus(deps: PermissionDeps = {}): PermissionStatus
 
 export async function requestMicrophonePermission(deps: PermissionDeps = {}): Promise<PermissionStatusSnapshot> {
   const preferences = deps.systemPreferences ?? systemPreferences;
+  const shellApi = deps.shell ?? shell;
   await preferences.askForMediaAccess?.("microphone");
-  return getPermissionStatus({ systemPreferences: preferences });
+  const status = getPermissionStatus({ systemPreferences: preferences });
+  if (status.microphone === "denied" || status.microphone === "restricted") {
+    await shellApi.openExternal(microphoneSettingsUrl);
+  }
+  return status;
 }
 
-export function requestAccessibilityPermission(deps: PermissionDeps = {}): PermissionStatusSnapshot {
+export async function requestAccessibilityPermission(deps: PermissionDeps = {}): Promise<PermissionStatusSnapshot> {
   const preferences = deps.systemPreferences ?? systemPreferences;
+  const shellApi = deps.shell ?? shell;
   preferences.isTrustedAccessibilityClient(true);
-  return getPermissionStatus({ systemPreferences: preferences });
+  const status = getPermissionStatus({ systemPreferences: preferences });
+  if (status.accessibility === "denied") {
+    await shellApi.openExternal(accessibilitySettingsUrl);
+  }
+  return status;
 }

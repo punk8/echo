@@ -416,6 +416,7 @@ Recovery requirements:
 
 - Permission errors link to the relevant macOS settings.
 - Overlay permission errors show a dedicated microphone or Accessibility settings action, not only generic Retry/Copy/Dismiss controls.
+- If microphone or Accessibility permission is denied, the recovery action opens the relevant macOS Privacy settings pane instead of only re-reading permission status.
 - Provider config errors explain which env var is missing without printing secrets.
 - ASR/refinement failures allow retry.
 - Error-overlay Retry must reprocess the retained failed recording when local history/recording retention is enabled, instead of starting a new recording under the same failed-session label.
