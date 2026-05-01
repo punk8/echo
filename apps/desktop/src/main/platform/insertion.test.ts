@@ -1,5 +1,68 @@
 import { describe, expect, it, vi } from "vitest";
-import { copyTextToClipboard, insertTextWithAccessibilityFallback, pasteTextWithClipboardFallback } from "./insertion";
+import {
+  composeTextInsertion,
+  copyTextToClipboard,
+  insertTextWithAccessibilityFallback,
+  pasteTextWithClipboardFallback
+} from "./insertion";
+
+describe("composeTextInsertion", () => {
+  it("adds a leading space when inserting a word after a word", () => {
+    expect(
+      composeTextInsertion({
+        currentValue: "Hello",
+        selectionStart: 5,
+        selectionLength: 0,
+        insertionText: "world"
+      })
+    ).toEqual({
+      value: "Hello world",
+      cursorOffset: 11
+    });
+  });
+
+  it("adds a trailing space when inserting a word before a word", () => {
+    expect(
+      composeTextInsertion({
+        currentValue: "Hello world",
+        selectionStart: 6,
+        selectionLength: 0,
+        insertionText: "brave"
+      })
+    ).toEqual({
+      value: "Hello brave world",
+      cursorOffset: 12
+    });
+  });
+
+  it("does not add spaces around punctuation or existing whitespace", () => {
+    expect(
+      composeTextInsertion({
+        currentValue: "Hello world",
+        selectionStart: 5,
+        selectionLength: 0,
+        insertionText: ","
+      })
+    ).toEqual({
+      value: "Hello, world",
+      cursorOffset: 6
+    });
+  });
+
+  it("replaces selected text without duplicating neighboring spaces", () => {
+    expect(
+      composeTextInsertion({
+        currentValue: "Meet at seven tomorrow",
+        selectionStart: 8,
+        selectionLength: 5,
+        insertionText: "three"
+      })
+    ).toEqual({
+      value: "Meet at three tomorrow",
+      cursorOffset: 13
+    });
+  });
+});
 
 describe("insertTextWithAccessibilityFallback", () => {
   it("uses direct Accessibility insertion before clipboard transport", async () => {

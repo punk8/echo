@@ -413,6 +413,7 @@ Recovery requirements:
 - Provider config errors explain which env var is missing without printing secrets.
 - ASR/refinement failures allow retry.
 - Insertion failures copy the refined text to clipboard when available.
+- Direct Accessibility insertion should normalize simple word-boundary spacing around the inserted text, while avoiding extra spaces around punctuation and existing whitespace.
 - Automatic clipboard-based paste should treat the clipboard as temporary transport: after a successful paste, Echo restores the user's previous clipboard text. If paste fails, Echo intentionally leaves the refined text on the clipboard and shows the manual paste fallback state.
 
 ## 14. Implementation Boundaries
