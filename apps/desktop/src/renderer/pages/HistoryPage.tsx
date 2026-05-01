@@ -42,6 +42,17 @@ export function HistoryPage({
         </div>
       </header>
 
+      <section className="privacy-summary" aria-labelledby="history-privacy-heading">
+        <div>
+          <p className="eyebrow">Retention</p>
+          <h2 id="history-privacy-heading">Local history</h2>
+        </div>
+        <ul>
+          <li>History is stored locally on this Mac and follows the retention setting above.</li>
+          <li>Audio is still sent to the configured providers for processing during each dictation.</li>
+        </ul>
+      </section>
+
       <section className="table-section">
         <div className="history-list">
           {history.length === 0 ? <p className="empty-state">No saved rows.</p> : null}

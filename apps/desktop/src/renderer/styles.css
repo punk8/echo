@@ -317,6 +317,33 @@ select {
   max-width: 360px;
 }
 
+.dictionary-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-tabs {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid rgba(38, 52, 63, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.filter-tabs button {
+  min-height: 28px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  color: #52606b;
+}
+
+.filter-tabs button.active {
+  color: #1f2d38;
+  background: #dfe8eb;
+}
+
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(220px, 1fr));

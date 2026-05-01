@@ -29,6 +29,33 @@ describe("HistoryPage", () => {
     expect(markup).toContain("Clear All");
   });
 
+  it("explains local retention separately from cloud processing", () => {
+    const markup = renderToStaticMarkup(
+      <HistoryPage
+        history={[]}
+        settings={{
+          historyRetention: "1_week",
+          shortcut: "Alt+Space",
+          language: "auto",
+          microphoneDeviceId: "system",
+          interactionSounds: true,
+          muteOtherAudioWhileDictating: false,
+          launchAtLogin: false,
+          showDockIcon: true,
+          outputStyle: "balanced"
+        }}
+        onRetentionChange={vi.fn()}
+        onCopy={vi.fn()}
+        onDelete={vi.fn()}
+        onRetry={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
+
+    expect(markup).toContain("History is stored locally on this Mac");
+    expect(markup).toContain("Audio is still sent to the configured providers for processing");
+  });
+
   it("shows recording duration and output length for rows", () => {
     const markup = renderToStaticMarkup(
       <HistoryPage

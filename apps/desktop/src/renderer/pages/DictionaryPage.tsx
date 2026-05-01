@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import type { DictionaryTermRow } from "../../main/storage/dictionaryRepository";
 
+type SourceFilter = "all" | "manual" | "learned";
+
 export function DictionaryPage({
   terms,
   onAdd,
@@ -17,10 +19,8 @@ export function DictionaryPage({
   const [aliases, setAliases] = useState("");
   const [pronunciationHint, setPronunciationHint] = useState("");
   const [capitalization, setCapitalization] = useState("");
-  const filtered = useMemo(
-    () => terms.filter((item) => item.term.toLowerCase().includes(query.toLowerCase())),
-    [query, terms]
-  );
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
+  const filtered = useMemo(() => filterDictionaryTerms(terms, query, sourceFilter), [query, sourceFilter, terms]);
 
   return (
     <section className="page-stack">
@@ -66,7 +66,22 @@ export function DictionaryPage({
         </form>
       </header>
 
-      <input className="search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
+      <div className="dictionary-controls">
+        <input className="search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
+        <div className="filter-tabs" aria-label="Dictionary source">
+          {(["all", "manual", "learned"] as const).map((source) => (
+            <button
+              key={source}
+              type="button"
+              className={sourceFilter === source ? "active" : ""}
+              aria-pressed={sourceFilter === source}
+              onClick={() => setSourceFilter(source)}
+            >
+              {formatSourceFilter(source)}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <section className="dictionary-grid">
         {filtered.length === 0 ? <p className="empty-state">No terms.</p> : null}
@@ -92,6 +107,15 @@ export function DictionaryPage({
   );
 }
 
+export function filterDictionaryTerms(terms: DictionaryTermRow[], query: string, sourceFilter: SourceFilter) {
+  const normalizedQuery = query.trim().toLowerCase();
+  return terms.filter((item) => {
+    const matchesSource = sourceFilter === "all" || item.source === sourceFilter;
+    const matchesQuery = !normalizedQuery || item.term.toLowerCase().includes(normalizedQuery);
+    return matchesSource && matchesQuery;
+  });
+}
+
 function splitAliases(value: string) {
   return value
     .split(",")
@@ -113,6 +137,17 @@ function formatTermDetail(item: DictionaryTermRow) {
 function normalizeOptionalField(value: string) {
   const trimmed = value.trim();
   return trimmed || null;
+}
+
+function formatSourceFilter(source: SourceFilter) {
+  switch (source) {
+    case "all":
+      return "All";
+    case "manual":
+      return "Manual";
+    case "learned":
+      return "Learned";
+  }
 }
 
 function promptDictionaryUpdate(item: DictionaryTermRow): DictionaryTermRow {
