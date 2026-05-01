@@ -62,6 +62,7 @@ function createDeps() {
         showRecording: vi.fn(),
         showProcessing: vi.fn(),
         showInserting: vi.fn(),
+        showCopied: vi.fn(),
         showError: vi.fn(),
         showComplete: vi.fn(),
         hide: vi.fn()
@@ -146,6 +147,28 @@ describe("createDictationSessionController", () => {
       sessionId: "session-1",
       code: "permission.microphone_missing",
       message: "Microphone permission is required to start dictation."
+    });
+  });
+
+  it("reports recorder stop errors instead of leaving the session in finalizing", async () => {
+    const { deps } = createDeps();
+    deps.recorder.stop.mockRejectedValueOnce(new Error("audio.encoder_failed"));
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+    const snapshot = await controller.stopDictation();
+
+    expect(deps.overlay.showProcessing).not.toHaveBeenCalled();
+    expect(deps.overlay.showError).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      code: "audio.recording_failed",
+      message: "Could not finish recording. Please try again."
+    });
+    expect(snapshot.state).toEqual({
+      status: "error",
+      sessionId: "session-1",
+      code: "audio.recording_failed",
+      message: "Could not finish recording. Please try again."
     });
   });
 
@@ -270,6 +293,7 @@ describe("createDictationSessionController", () => {
 
     expect(deps.insertText).not.toHaveBeenCalled();
     expect(deps.copyText).toHaveBeenCalledWith("Tomorrow at three.");
+    expect(deps.overlay.showCopied).toHaveBeenCalledWith({ sessionId: "session-1" });
     expect(historyRows[0]).toMatchObject({
       insertion_method: "clipboard",
       insertion_status: "copied"

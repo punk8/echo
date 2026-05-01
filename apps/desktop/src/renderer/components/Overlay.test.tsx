@@ -20,6 +20,13 @@ describe("Overlay", () => {
     expect(markup).toContain("Processing");
   });
 
+  it("shows a manual paste instruction when text was copied instead of inserted", () => {
+    const markup = renderToStaticMarkup(<Overlay state={{ status: "copied" }} />);
+
+    expect(markup).toContain("Copied");
+    expect(markup).toContain("Command+V");
+  });
+
   it("shows Retry, Copy, and Dismiss actions on error", () => {
     const markup = renderToStaticMarkup(
       <Overlay

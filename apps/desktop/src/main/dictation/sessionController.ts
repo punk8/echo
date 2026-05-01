@@ -36,6 +36,7 @@ export interface DictationSessionControllerDeps {
     showRecording: (input: { sessionId: string; context: DictationContext }) => void;
     showProcessing: (input: { sessionId: string }) => void;
     showInserting: (input: { sessionId: string }) => void;
+    showCopied: (input: { sessionId: string }) => void;
     showError: (input: { sessionId: string; code: string; message: string; recoverableText?: string }) => void;
     showComplete: (input: { sessionId: string }) => void;
     hide: () => void;
@@ -128,7 +129,22 @@ export function createDictationSessionController(deps: DictationSessionControlle
     const session = requireCurrentSession();
     state = applyDictationEvent(state, { type: "stop_requested" });
 
-    const recording = await deps.recorder.stop(session.sessionId);
+    let recording: RecordedAudio;
+    try {
+      recording = await deps.recorder.stop(session.sessionId);
+    } catch (error) {
+      const recorderError = normalizeRecorderStopError(error);
+      state = {
+        status: "error",
+        sessionId: session.sessionId,
+        code: recorderError.code,
+        message: recorderError.message
+      };
+      currentSession = undefined;
+      deps.overlay.showError({ sessionId: session.sessionId, code: recorderError.code, message: recorderError.message });
+      return getAppState();
+    }
+
     state = applyDictationEvent(state, { type: "processing_started" });
     deps.overlay.showProcessing({ sessionId: session.sessionId });
 
@@ -155,7 +171,11 @@ export function createDictationSessionController(deps: DictationSessionControlle
       storeHistory(settings, buildCompletedHistoryRow({ session, recording, response, insertion }));
 
       state = applyDictationEvent(state, { type: "completed" });
-      deps.overlay.showComplete({ sessionId: session.sessionId });
+      if (insertion.status === "copied") {
+        deps.overlay.showCopied({ sessionId: session.sessionId });
+      } else {
+        deps.overlay.showComplete({ sessionId: session.sessionId });
+      }
       currentSession = undefined;
       return getAppState();
     } catch (error) {
@@ -220,6 +240,13 @@ function normalizeRecorderStartError(error: unknown) {
   return {
     code: "audio.device_unavailable",
     message: "No microphone input device is available."
+  };
+}
+
+function normalizeRecorderStopError(_error: unknown) {
+  return {
+    code: "audio.recording_failed",
+    message: "Could not finish recording. Please try again."
   };
 }
 

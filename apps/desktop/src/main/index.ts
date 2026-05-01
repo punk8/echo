@@ -81,6 +81,11 @@ if (!gotLock) {
           overlay.showInactive();
           overlay.webContents.send("echo:overlay-state", { status: "inserting", sessionId });
         },
+        showCopied: ({ sessionId }) => {
+          overlay.showInactive();
+          overlay.webContents.send("echo:overlay-state", { status: "copied", sessionId });
+          setTimeout(() => overlay.hide(), 3000);
+        },
         showError: ({ sessionId, code, message, recoverableText }) => {
           overlay.showInactive();
           overlay.webContents.send("echo:overlay-state", { status: "error", sessionId, code, message, recoverableText });

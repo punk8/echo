@@ -29,6 +29,7 @@ export const desktopApi = {
   getPermissionStatus: () => window.echo.getPermissionStatus() as Promise<PermissionStatusSnapshot>,
   requestMicrophonePermission: () => window.echo.requestMicrophonePermission() as Promise<PermissionStatusSnapshot>,
   requestAccessibilityPermission: () => window.echo.requestAccessibilityPermission() as Promise<PermissionStatusSnapshot>,
+  hideOverlay: () => window.echo.hideOverlay() as Promise<void>,
   onShortcutToggle: (callback: () => void) => window.echo.onShortcutToggle(callback),
   onShortcutError: (callback: (payload: unknown) => void) => window.echo.onShortcutError(callback),
   onRecorderStart: (callback: (payload: { sessionId: string }) => Promise<void>) => window.echo.onRecorderStart(callback),
@@ -57,6 +58,7 @@ declare global {
       getPermissionStatus: () => Promise<unknown>;
       requestMicrophonePermission: () => Promise<unknown>;
       requestAccessibilityPermission: () => Promise<unknown>;
+      hideOverlay: () => Promise<unknown>;
       onShortcutToggle: (callback: () => void) => () => void;
       onShortcutError: (callback: (payload: unknown) => void) => () => void;
       onRecorderStart: (callback: (payload: { sessionId: string }) => Promise<void>) => () => void;

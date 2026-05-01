@@ -9,6 +9,7 @@ export type OverlayState =
   | { status: "finalizing" }
   | { status: "processing" }
   | { status: "inserting" }
+  | { status: "copied" }
   | { status: "complete" }
   | {
       status: "error";
@@ -47,6 +48,7 @@ export function Overlay({ state }: { state: OverlayState }) {
       {state.status === "finalizing" ? <OverlayMessage title="Finalizing" detail="Preparing audio" /> : null}
       {state.status === "processing" ? <OverlayMessage title="Processing" detail="Refining dictation" /> : null}
       {state.status === "inserting" ? <OverlayMessage title="Inserting" detail="Pasting into the active app" /> : null}
+      {state.status === "copied" ? <OverlayMessage title="Copied" detail="Paste manually with Command+V" /> : null}
       {state.status === "complete" ? <OverlayMessage title="Inserted" detail="Ready for the next dictation" /> : null}
 
       {state.status === "error" ? (

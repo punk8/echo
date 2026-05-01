@@ -28,4 +28,51 @@ describe("buildOverlayState", () => {
 
     expect(writeClipboard).toHaveBeenCalledWith("raw transcript");
   });
+
+  it("dismisses overlay errors without cancelling an already-ended recording session", () => {
+    const onFinish = vi.fn();
+    const onCancel = vi.fn();
+    const onDismiss = vi.fn();
+    const overlayState = buildOverlayState(
+      { status: "error", sessionId: "session-1", code: "server.refine_failed", message: "Dictation refinement failed." },
+      {
+        status: "error",
+        sessionId: "session-1",
+        message: "Dictation refinement failed."
+      },
+      [],
+      0,
+      onFinish,
+      onCancel,
+      null,
+      vi.fn(),
+      onDismiss
+    );
+
+    if (overlayState.status !== "error") {
+      throw new Error("expected error overlay state");
+    }
+
+    overlayState.onDismiss();
+
+    expect(onDismiss).toHaveBeenCalledOnce();
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it("maps copied overlay payloads to manual paste state", () => {
+    const overlayState = buildOverlayState(
+      { status: "complete", sessionId: "session-1" },
+      {
+        status: "copied",
+        sessionId: "session-1"
+      },
+      [],
+      0,
+      vi.fn(),
+      vi.fn(),
+      null
+    );
+
+    expect(overlayState).toEqual({ status: "copied" });
+  });
 });

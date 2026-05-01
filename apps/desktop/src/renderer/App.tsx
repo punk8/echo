@@ -134,7 +134,9 @@ export function App() {
         elapsedMs,
         toggleDictation,
         cancelDictation,
-        error
+        error,
+        undefined,
+        dismissOverlay
       ),
     [snapshot.state, overlayPayload, levelSamples, elapsedMs, error]
   );
@@ -226,6 +228,12 @@ export function App() {
     setSnapshot(next);
   }
 
+  async function dismissOverlay() {
+    setError(null);
+    setOverlayPayload(null);
+    await desktopApi.hideOverlay();
+  }
+
   async function saveSettings(settings: Partial<EchoSettings>) {
     const next = await desktopApi.saveSettings(settings);
     setSnapshot((current) => ({ ...current, settings: next }));
@@ -281,7 +289,8 @@ export function buildOverlayState(
   onFinish: () => void,
   onCancel: () => void,
   error: string | null,
-  writeClipboard: (text: string) => void | Promise<void> = (text) => navigator.clipboard.writeText(text)
+  writeClipboard: (text: string) => void | Promise<void> = (text) => navigator.clipboard.writeText(text),
+  onDismiss: () => void = onCancel
 ): OverlayState {
   if (error) {
     return {
@@ -289,7 +298,7 @@ export function buildOverlayState(
       message: error,
       onRetry: onFinish,
       onCopy: () => void writeClipboard(error),
-      onDismiss: onCancel
+      onDismiss
     };
   }
 
@@ -308,6 +317,9 @@ export function buildOverlayState(
   if (overlayPayload?.status === "inserting") {
     return { status: "inserting" };
   }
+  if (overlayPayload?.status === "copied") {
+    return { status: "copied" };
+  }
   if (overlayPayload?.status === "complete") {
     return { status: "complete" };
   }
@@ -319,7 +331,7 @@ export function buildOverlayState(
       message,
       onRetry: onFinish,
       onCopy: () => void writeClipboard(copyText),
-      onDismiss: onCancel
+      onDismiss
     };
   }
   if (state.status === "finalizing") {
@@ -340,14 +352,14 @@ export function buildOverlayState(
       message: state.message,
       onRetry: onFinish,
       onCopy: () => void writeClipboard(state.message),
-      onDismiss: onCancel
+      onDismiss
     };
   }
   return { status: "complete" };
 }
 
 export interface MainOverlayPayload {
-  status: "recording" | "processing" | "inserting" | "complete" | "error";
+  status: "recording" | "processing" | "inserting" | "copied" | "complete" | "error";
   sessionId: string;
   message?: string;
   recoverableText?: string;
@@ -364,6 +376,7 @@ export function isMainOverlayPayload(payload: unknown): payload is MainOverlayPa
     (value.status === "recording" ||
       value.status === "processing" ||
       value.status === "inserting" ||
+      value.status === "copied" ||
       value.status === "complete" ||
       value.status === "error")
   );
