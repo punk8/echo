@@ -3,15 +3,16 @@ import { z } from "zod";
 const EnvSchema = z.object({
   API_HOST: z.string().default("127.0.0.1"),
   API_PORT: z.coerce.number().int().positive().default(43110),
+  API_KEY: z.string().min(1).optional(),
   ASR_PROVIDER: z.literal("openai"),
   ASR_MODEL: z.literal("gpt-4o-transcribe"),
   ASR_BASE_URL: z.string().url(),
-  ASR_API_KEY: z.string({ required_error: "config.asr_missing" }).min(1, "config.asr_missing"),
+  ASR_API_KEY: z.string().min(1, "config.asr_missing").optional(),
   ASR_LANGUAGE: z.string().default("auto"),
   LLM_PROVIDER: z.literal("openai-compatible"),
   LLM_MODEL: z.string().min(1, "config.llm_missing"),
   LLM_BASE_URL: z.string().url(),
-  LLM_API_KEY: z.string({ required_error: "config.llm_missing" }).min(1, "config.llm_missing"),
+  LLM_API_KEY: z.string().min(1, "config.llm_missing").optional(),
   LLM_TEMPERATURE: z.coerce.number().min(0).max(1).default(0.2)
 });
 
@@ -24,6 +25,16 @@ export function loadApiEnv(input: NodeJS.ProcessEnv) {
     throw new Error(first?.message ?? "config.invalid");
   }
 
+  const asrApiKey = parsed.data.ASR_API_KEY ?? parsed.data.API_KEY;
+  if (!asrApiKey) {
+    throw new Error("config.asr_missing");
+  }
+
+  const llmApiKey = parsed.data.LLM_API_KEY ?? parsed.data.API_KEY;
+  if (!llmApiKey) {
+    throw new Error("config.llm_missing");
+  }
+
   return {
     server: {
       host: parsed.data.API_HOST,
@@ -33,14 +44,14 @@ export function loadApiEnv(input: NodeJS.ProcessEnv) {
       provider: parsed.data.ASR_PROVIDER,
       model: parsed.data.ASR_MODEL,
       baseUrl: parsed.data.ASR_BASE_URL,
-      apiKey: parsed.data.ASR_API_KEY,
+      apiKey: asrApiKey,
       language: parsed.data.ASR_LANGUAGE
     },
     llm: {
       provider: parsed.data.LLM_PROVIDER,
       model: parsed.data.LLM_MODEL,
       baseUrl: parsed.data.LLM_BASE_URL,
-      apiKey: parsed.data.LLM_API_KEY,
+      apiKey: llmApiKey,
       temperature: parsed.data.LLM_TEMPERATURE
     }
   } as const;
