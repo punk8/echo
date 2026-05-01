@@ -69,6 +69,7 @@ if (!gotLock) {
       createSessionId: randomUUID,
       now: () => new Date().toISOString(),
       getPermissionStatus,
+      getProviderStartupError: () => runtime.startupError,
       captureContext,
       recorder,
       backend: (input) => processDictation({ ...input, apiBaseUrl: runtime.apiBaseUrl }),

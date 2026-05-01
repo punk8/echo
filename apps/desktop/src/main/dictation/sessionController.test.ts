@@ -37,6 +37,7 @@ function createDeps() {
         microphone: "granted",
         accessibility: "granted"
       })),
+      getProviderStartupError: vi.fn(() => undefined as string | undefined),
       captureContext: vi.fn().mockResolvedValue(context),
       recorder: {
         start: vi.fn().mockResolvedValue(undefined),
@@ -180,6 +181,28 @@ describe("createDictationSessionController", () => {
       sessionId: "session-1",
       code: "permission.microphone_missing",
       message: "Microphone permission is required to start dictation."
+    });
+  });
+
+  it("does not start recording when provider configuration is missing", async () => {
+    const { deps } = createDeps();
+    deps.getProviderStartupError.mockReturnValueOnce("config.llm_model_missing");
+    const controller = createDictationSessionController(deps);
+
+    const snapshot = await controller.startDictation();
+
+    expect(deps.captureContext).not.toHaveBeenCalled();
+    expect(deps.recorder.start).not.toHaveBeenCalled();
+    expect(deps.overlay.showError).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      code: "config.llm_model_missing",
+      message: "LLM configuration missing. Set LLM_MODEL."
+    });
+    expect(snapshot.state).toEqual({
+      status: "error",
+      sessionId: "session-1",
+      code: "config.llm_model_missing",
+      message: "LLM configuration missing. Set LLM_MODEL."
     });
   });
 

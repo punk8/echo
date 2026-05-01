@@ -25,6 +25,7 @@ export interface DictationSessionControllerDeps {
   createSessionId: () => string;
   now: () => string;
   getPermissionStatus: () => PermissionStatusSnapshot;
+  getProviderStartupError?: () => string | undefined;
   captureContext: () => Promise<DictationContext>;
   recorder: {
     start: (sessionId: string) => Promise<void>;
@@ -96,6 +97,20 @@ export function createDictationSessionController(deps: DictationSessionControlle
   async function startDictation() {
     state = applyDictationEvent(state, { type: "prepare" });
     const sessionId = deps.createSessionId();
+    const providerStartupError = deps.getProviderStartupError?.();
+
+    if (providerStartupError?.startsWith("config.")) {
+      const message = messageForProviderStartupError(providerStartupError);
+      state = {
+        status: "error",
+        sessionId,
+        code: providerStartupError,
+        message
+      };
+      deps.overlay.showError({ sessionId, code: providerStartupError, message });
+      return getAppState();
+    }
+
     const permissions = deps.getPermissionStatus();
 
     if (permissions.microphone === "denied" || permissions.microphone === "restricted") {
@@ -375,6 +390,23 @@ function normalizeRecorderStartError(error: unknown) {
     code: "audio.device_unavailable",
     message: "No microphone input device is available."
   };
+}
+
+function messageForProviderStartupError(code: string) {
+  switch (code) {
+    case "config.llm_model_missing":
+      return "LLM configuration missing. Set LLM_MODEL.";
+    case "config.llm_key_missing":
+      return "LLM configuration missing. Set LLM_API_KEY or API_KEY.";
+    case "config.asr_key_missing":
+      return "ASR configuration missing. Set ASR_API_KEY or API_KEY.";
+    case "config.llm_missing":
+      return "LLM configuration missing. Set LLM_MODEL and LLM_API_KEY.";
+    case "config.asr_missing":
+      return "ASR configuration missing. Set ASR_API_KEY or API_KEY.";
+    default:
+      return "Provider configuration is missing.";
+  }
 }
 
 function normalizeRecorderStopError(_error: unknown) {
