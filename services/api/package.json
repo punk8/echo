@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "build:bundle": "esbuild src/index.ts --bundle --platform=node --format=esm --banner:js='import { createRequire } from \"node:module\"; const require = createRequire(import.meta.url);' --outfile=bundle/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test:real": "RUN_REAL_PROVIDER_TESTS=1 vitest run services/api/src/providers"
+    "test:real": "cd ../.. && RUN_REAL_PROVIDER_TESTS=1 vitest run services/api/src/providers"
   },
   "dependencies": {
     "@echo/shared": "workspace:*",
