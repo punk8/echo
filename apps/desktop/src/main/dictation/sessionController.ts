@@ -32,6 +32,7 @@ export interface DictationSessionControllerDeps {
   backend: (input: Omit<ProcessDictationInput, "apiBaseUrl" | "fetchImpl">) => Promise<DictationSuccessResponse>;
   insertText: (text: string) => Promise<InsertionResult>;
   copyText: (text: string) => Promise<InsertionResult>;
+  deleteLocalRecording: (localPath: string) => Promise<void>;
   overlay: {
     showRecording: (input: { sessionId: string; context: DictationContext }) => void;
     showProcessing: (input: { sessionId: string }) => void;
@@ -45,7 +46,7 @@ export interface DictationSessionControllerDeps {
     history: {
       insertHistoryRow: (row: HistoryRowInput) => void;
       updateInsertionStatus: (id: string, insertionStatus: string) => void;
-      pruneHistory: (retention: EchoSettings["historyRetention"]) => void;
+      pruneHistory: (retention: EchoSettings["historyRetention"]) => string[];
     };
     dictionary: {
       listDictionaryTerms: () => DictionaryTermRow[];
@@ -168,7 +169,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
         ? await deps.insertText(response.refined_text)
         : await deps.copyText(response.refined_text);
 
-      storeHistory(settings, buildCompletedHistoryRow({ session, recording, response, insertion }));
+      await storeHistory(settings, buildCompletedHistoryRow({ session, recording, response, insertion }));
 
       state = applyDictationEvent(state, { type: "completed" });
       if (insertion.status === "copied") {
@@ -181,7 +182,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
     } catch (error) {
       const backendError = normalizeBackendError(error);
       const settings = deps.repositories.settings.getSettings();
-      storeHistory(settings, buildErrorHistoryRow({ session, recording, error: backendError }));
+      await storeHistory(settings, buildErrorHistoryRow({ session, recording, error: backendError }));
       state = applyDictationEvent(state, {
         type: "fail",
         code: backendError.code,
@@ -218,13 +219,29 @@ export function createDictationSessionController(deps: DictationSessionControlle
     }));
   }
 
-  function storeHistory(settings: EchoSettings, row: HistoryRowInput) {
+  async function storeHistory(settings: EchoSettings, row: HistoryRowInput) {
     if (settings.historyRetention === "never") {
+      await deleteLocalRecording(row.audio_local_path);
       return;
     }
 
     deps.repositories.history.insertHistoryRow(row);
-    deps.repositories.history.pruneHistory(settings.historyRetention);
+    await deleteLocalRecordings(deps.repositories.history.pruneHistory(settings.historyRetention));
+  }
+
+  async function deleteLocalRecordings(localPaths: string[]) {
+    await Promise.all(localPaths.map((localPath) => deleteLocalRecording(localPath)));
+  }
+
+  async function deleteLocalRecording(localPath: string | null) {
+    if (!localPath) {
+      return;
+    }
+    try {
+      await deps.deleteLocalRecording(localPath);
+    } catch {
+      // Local cleanup must not turn a successful dictation into a failed one.
+    }
   }
 }
 

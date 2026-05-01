@@ -36,6 +36,7 @@ export interface RegisterIpcHandlersDeps {
     getPermissionStatus: typeof getPermissionStatus;
     requestMicrophonePermission: typeof requestMicrophonePermission;
     requestAccessibilityPermission: typeof requestAccessibilityPermission;
+    deleteLocalRecording: (localPath: string) => Promise<void>;
   };
   dictation: {
     getAppState: () => AppStateSnapshot;
@@ -59,11 +60,17 @@ export function registerIpcHandlers(deps: RegisterIpcHandlersDeps) {
   ipcMain.handle("echo:request-accessibility-permission", () => deps.platform.requestAccessibilityPermission());
 
   ipcMain.handle("echo:list-history", () => deps.repositories.history.listHistory());
-  ipcMain.handle("echo:delete-history-row", (_event, id: string) => {
-    deps.repositories.history.deleteHistoryRow(id);
+  ipcMain.handle("echo:delete-history-row", async (_event, id: string) => {
+    await deleteHistoryRowWithAudioCleanup(
+      { history: deps.repositories.history, deleteLocalRecording: deps.platform.deleteLocalRecording },
+      id
+    );
   });
-  ipcMain.handle("echo:clear-history", () => {
-    deps.repositories.history.clearHistory();
+  ipcMain.handle("echo:clear-history", async () => {
+    await clearHistoryWithAudioCleanup({
+      history: deps.repositories.history,
+      deleteLocalRecording: deps.platform.deleteLocalRecording
+    });
   });
 
   ipcMain.handle("echo:list-dictionary-terms", () => deps.repositories.dictionary.listDictionaryTerms());
@@ -91,4 +98,36 @@ export function registerIpcHandlers(deps: RegisterIpcHandlersDeps) {
   ipcMain.handle("echo:hide-overlay", () => {
     deps.windows.overlayWindow.hide();
   });
+}
+
+export async function deleteHistoryRowWithAudioCleanup(
+  deps: {
+    history: { deleteHistoryRow: (id: string) => string[] };
+    deleteLocalRecording: (localPath: string) => Promise<void>;
+  },
+  id: string
+) {
+  await deleteLocalRecordings(deps.history.deleteHistoryRow(id), deps.deleteLocalRecording);
+}
+
+export async function clearHistoryWithAudioCleanup(deps: {
+  history: { clearHistory: () => string[] };
+  deleteLocalRecording: (localPath: string) => Promise<void>;
+}) {
+  await deleteLocalRecordings(deps.history.clearHistory(), deps.deleteLocalRecording);
+}
+
+async function deleteLocalRecordings(
+  localPaths: string[],
+  deleteLocalRecording: (localPath: string) => Promise<void>
+) {
+  await Promise.all(
+    localPaths.map(async (localPath) => {
+      try {
+        await deleteLocalRecording(localPath);
+      } catch {
+        // History cleanup should still complete if a stale local file is already gone.
+      }
+    })
+  );
 }

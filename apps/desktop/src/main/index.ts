@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { rm } from "node:fs/promises";
 import { app, BrowserWindow, ipcMain, shell } from "electron";
 import { processDictation } from "./dictation/backendClient";
 import { checkProviderStatus } from "./dictation/providerStatus";
@@ -68,6 +69,7 @@ if (!gotLock) {
       backend: (input) => processDictation({ ...input, apiBaseUrl: getApiBaseUrl() }),
       insertText: pasteTextWithClipboardFallback,
       copyText: copyTextToClipboard,
+      deleteLocalRecording: (localPath) => rm(localPath, { force: true }),
       overlay: {
         showRecording: ({ sessionId }) => {
           overlay.showInactive();
@@ -118,7 +120,8 @@ if (!gotLock) {
         insertText: pasteTextWithClipboardFallback,
         getPermissionStatus,
         requestMicrophonePermission,
-        requestAccessibilityPermission
+        requestAccessibilityPermission,
+        deleteLocalRecording: (localPath) => rm(localPath, { force: true })
       },
       dictation: dictationHandlers,
       onSettingsSaved: (nextSettings) => {

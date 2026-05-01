@@ -56,9 +56,21 @@ describe("historyRepository", () => {
     repo.insertHistoryRow(createHistoryRow("row-1"));
     repo.insertHistoryRow(createHistoryRow("row-2"));
 
-    repo.clearHistory();
+    const deletedAudioPaths = repo.clearHistory();
 
     expect(repo.listHistory()).toEqual([]);
+    expect(deletedAudioPaths).toEqual(["/tmp/row-1.webm", "/tmp/row-2.webm"]);
+  });
+
+  it("deletes one history row and returns its audio path", () => {
+    const repo = createHistoryRepository(temp.db);
+    repo.insertHistoryRow(createHistoryRow("row-1"));
+    repo.insertHistoryRow(createHistoryRow("row-2"));
+
+    const deletedAudioPaths = repo.deleteHistoryRow("row-1");
+
+    expect(repo.listHistory().map((row) => row.id)).toEqual(["row-2"]);
+    expect(deletedAudioPaths).toEqual(["/tmp/row-1.webm"]);
   });
 
   it("prunes rows older than the selected retention window", () => {
@@ -72,9 +84,21 @@ describe("historyRepository", () => {
       .prepare("UPDATE dictation_history SET created_at = ? WHERE id = ?")
       .run("2026-05-01T00:00:00.000Z", "new");
 
-    repo.pruneHistory("1_week", new Date("2026-05-02T00:00:00.000Z"));
+    const deletedAudioPaths = repo.pruneHistory("1_week", new Date("2026-05-02T00:00:00.000Z"));
 
     expect(repo.listHistory().map((row) => row.id)).toEqual(["new"]);
+    expect(deletedAudioPaths).toEqual(["/tmp/old.webm"]);
+  });
+
+  it("returns all audio paths when retention removes every row", () => {
+    const repo = createHistoryRepository(temp.db);
+    repo.insertHistoryRow(createHistoryRow("row-1"));
+    repo.insertHistoryRow(createHistoryRow("row-2"));
+
+    const deletedAudioPaths = repo.pruneHistory("never");
+
+    expect(repo.listHistory()).toEqual([]);
+    expect(deletedAudioPaths).toEqual(["/tmp/row-1.webm", "/tmp/row-2.webm"]);
   });
 });
 

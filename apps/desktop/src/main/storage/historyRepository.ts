@@ -56,25 +56,39 @@ export function createHistoryRepository(db: Database) {
     },
 
     deleteHistoryRow(id: string) {
+      const audioPaths = listAudioPathsForDeletedRows(db, "WHERE id = ?", id);
       db.prepare("DELETE FROM dictation_history WHERE id = ?").run(id);
+      return audioPaths;
     },
 
     clearHistory() {
+      const audioPaths = listAudioPathsForDeletedRows(db, "");
       db.prepare("DELETE FROM dictation_history").run();
+      return audioPaths;
     },
 
     pruneHistory(retention: HistoryRetention, now = new Date()) {
       const cutoff = cutoffForRetention(retention, now);
       if (cutoff === "none") {
-        return;
+        return [];
       }
       if (cutoff === "all") {
+        const audioPaths = listAudioPathsForDeletedRows(db, "");
         db.prepare("DELETE FROM dictation_history").run();
-        return;
+        return audioPaths;
       }
+      const audioPaths = listAudioPathsForDeletedRows(db, "WHERE created_at < ?", cutoff.toISOString());
       db.prepare("DELETE FROM dictation_history WHERE created_at < ?").run(cutoff.toISOString());
+      return audioPaths;
     }
   };
+}
+
+function listAudioPathsForDeletedRows(db: Database, whereClause: string, ...params: unknown[]) {
+  const rows = db
+    .prepare(`SELECT audio_local_path FROM dictation_history ${whereClause} ORDER BY created_at ASC, rowid ASC`)
+    .all(...params) as Array<{ audio_local_path: string | null }>;
+  return rows.map((row) => row.audio_local_path).filter((path): path is string => Boolean(path));
 }
 
 function cutoffForRetention(retention: HistoryRetention, now: Date): Date | "all" | "none" {

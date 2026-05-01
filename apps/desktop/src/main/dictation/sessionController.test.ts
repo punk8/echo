@@ -58,6 +58,7 @@ function createDeps() {
       }),
       insertText: vi.fn().mockResolvedValue({ method: "clipboard_paste" as const, status: "inserted" as const }),
       copyText: vi.fn().mockResolvedValue({ method: "clipboard" as const, status: "copied" as const }),
+      deleteLocalRecording: vi.fn().mockResolvedValue(undefined),
       overlay: {
         showRecording: vi.fn(),
         showProcessing: vi.fn(),
@@ -71,7 +72,7 @@ function createDeps() {
         history: {
           insertHistoryRow: vi.fn((row: unknown) => historyRows.push(row)),
           updateInsertionStatus: vi.fn(),
-          pruneHistory: vi.fn()
+          pruneHistory: vi.fn<() => string[]>(() => [])
         },
         dictionary: {
           listDictionaryTerms: vi.fn(() => [
@@ -265,6 +266,7 @@ describe("createDictationSessionController", () => {
     await controller.stopDictation();
 
     expect(historyRows).toEqual([]);
+    expect(deps.deleteLocalRecording).toHaveBeenCalledWith("/tmp/session-1.webm");
   });
 
   it("prunes history after storing a completed row", async () => {
@@ -275,6 +277,17 @@ describe("createDictationSessionController", () => {
     await controller.stopDictation();
 
     expect(deps.repositories.history.pruneHistory).toHaveBeenCalledWith("1_week");
+  });
+
+  it("deletes audio files returned by history pruning", async () => {
+    const { deps } = createDeps();
+    deps.repositories.history.pruneHistory.mockReturnValueOnce(["/tmp/old-session.webm"]);
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+    await controller.stopDictation();
+
+    expect(deps.deleteLocalRecording).toHaveBeenCalledWith("/tmp/old-session.webm");
   });
 
   it("copies refined text without pasting when focus changes before insertion", async () => {
