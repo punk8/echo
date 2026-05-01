@@ -37,7 +37,7 @@ export function createSettingsRepository(db: Database) {
       const values = new Map(rows.map((row) => [row.key, row.value]));
       return {
         historyRetention: parseHistoryRetention(values.get("historyRetention"), defaults.historyRetention),
-        shortcut: values.get("shortcut") ?? defaults.shortcut,
+        shortcut: parseShortcut(values.get("shortcut"), defaults.shortcut),
         language: values.get("language") ?? defaults.language,
         microphoneDeviceId: values.get("microphoneDeviceId") ?? defaults.microphoneDeviceId,
         interactionSounds: parseBoolean(values.get("interactionSounds"), defaults.interactionSounds),
@@ -72,6 +72,11 @@ function parseBoolean(value: string | undefined, fallback: boolean) {
     return false;
   }
   return fallback;
+}
+
+function parseShortcut(value: string | undefined, fallback: string) {
+  const shortcut = value?.trim();
+  return shortcut && shortcut.length > 0 ? shortcut : fallback;
 }
 
 function parseHistoryRetention(value: string | undefined, fallback: HistoryRetention): HistoryRetention {

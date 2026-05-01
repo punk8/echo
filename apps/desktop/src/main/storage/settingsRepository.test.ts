@@ -44,4 +44,12 @@ describe("settingsRepository", () => {
       outputStyle: "polished"
     });
   });
+
+  it("falls back to the default shortcut when a stored shortcut is blank", () => {
+    const repo = createSettingsRepository(temp.db);
+
+    repo.saveSettings({ shortcut: "   " });
+
+    expect(repo.getSettings().shortcut).toBe("Alt+Space");
+  });
 });

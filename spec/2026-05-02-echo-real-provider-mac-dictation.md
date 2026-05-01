@@ -317,6 +317,7 @@ Dictionary:
 Settings:
 
 - Shortcut configuration.
+- A blank stored shortcut must be treated as the default shortcut so Home and Settings never show an empty trigger.
 - Microphone selection.
 - Provider configuration status.
 - Language preference.
