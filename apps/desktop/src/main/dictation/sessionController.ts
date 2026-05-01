@@ -9,6 +9,7 @@ import {
 } from "@echo/shared";
 import { BackendDictationError, type ProcessDictationInput } from "./backendClient";
 import type { InsertionResult } from "../platform/insertion";
+import type { PermissionStatusSnapshot } from "../platform/permissions";
 import type { DictionaryTermRow } from "../storage/dictionaryRepository";
 import type { HistoryRowInput } from "../storage/historyRepository";
 import type { EchoSettings } from "../storage/settingsRepository";
@@ -23,6 +24,7 @@ export interface RecordedAudio {
 export interface DictationSessionControllerDeps {
   createSessionId: () => string;
   now: () => string;
+  getPermissionStatus: () => PermissionStatusSnapshot;
   captureContext: () => Promise<DictationContext>;
   recorder: {
     start: (sessionId: string) => Promise<void>;
@@ -84,6 +86,21 @@ export function createDictationSessionController(deps: DictationSessionControlle
   async function startDictation() {
     state = applyDictationEvent(state, { type: "prepare" });
     const sessionId = deps.createSessionId();
+    const permissions = deps.getPermissionStatus();
+
+    if (permissions.accessibility !== "granted") {
+      const code = "permission.accessibility_missing";
+      const message = "Accessibility permission is required to insert dictation into other apps.";
+      state = {
+        status: "error",
+        sessionId,
+        code,
+        message
+      };
+      deps.overlay.showError({ sessionId, code, message });
+      return getAppState();
+    }
+
     const context = await deps.captureContext();
 
     if (!context.writable) {

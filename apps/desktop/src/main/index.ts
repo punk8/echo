@@ -64,6 +64,7 @@ if (!gotLock) {
     const controller = createDictationSessionController({
       createSessionId: randomUUID,
       now: () => new Date().toISOString(),
+      getPermissionStatus,
       captureContext,
       recorder,
       backend: (input) => processDictation({ ...input, apiBaseUrl: getApiBaseUrl() }),

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { BackendDictationError } from "./backendClient";
 import { createDictationSessionController } from "./sessionController";
+import type { PermissionStatusSnapshot } from "../platform/permissions";
 import type { EchoSettings } from "../storage/settingsRepository";
 
 const context = {
@@ -31,6 +32,10 @@ function createDeps() {
     deps: {
       createSessionId: () => "session-1",
       now: () => "2026-05-02T00:00:00.000Z",
+      getPermissionStatus: vi.fn<() => PermissionStatusSnapshot>(() => ({
+        microphone: "granted",
+        accessibility: "granted"
+      })),
       captureContext: vi.fn().mockResolvedValue(context),
       recorder: {
         start: vi.fn().mockResolvedValue(undefined),
@@ -127,6 +132,28 @@ describe("createDictationSessionController", () => {
       sessionId: "session-1",
       code: "target.no_writable_field",
       message: "Focus a writable text field before starting dictation."
+    });
+  });
+
+  it("does not start recording when accessibility permission is missing", async () => {
+    const { deps } = createDeps();
+    deps.getPermissionStatus.mockReturnValueOnce({ microphone: "granted", accessibility: "denied" });
+    const controller = createDictationSessionController(deps);
+
+    const snapshot = await controller.startDictation();
+
+    expect(deps.captureContext).not.toHaveBeenCalled();
+    expect(deps.recorder.start).not.toHaveBeenCalled();
+    expect(deps.overlay.showError).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      code: "permission.accessibility_missing",
+      message: "Accessibility permission is required to insert dictation into other apps."
+    });
+    expect(snapshot.state).toEqual({
+      status: "error",
+      sessionId: "session-1",
+      code: "permission.accessibility_missing",
+      message: "Accessibility permission is required to insert dictation into other apps."
     });
   });
 
