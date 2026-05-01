@@ -19,7 +19,9 @@ export const DictationErrorCodes = [
   "server.provider_timeout",
   "server.provider_rate_limited",
   "server.audio_too_large",
-  "server.unsupported_audio_format"
+  "server.unsupported_audio_format",
+  "server.invalid_duration",
+  "server.invalid_request"
 ] as const;
 
 export type DictationErrorCode = (typeof DictationErrorCodes)[number];
