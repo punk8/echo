@@ -1,4 +1,5 @@
 import type { DictationState } from "@echo/shared";
+import type { ProviderStatus } from "../../main/dictation/providerStatus";
 import type { HistoryRow } from "../../main/storage/historyRepository";
 import type { EchoSettings } from "../../main/storage/settingsRepository";
 
@@ -6,13 +7,13 @@ export function HomePage({
   state,
   settings,
   history,
-  providerReady,
+  providerStatus,
   onToggle
 }: {
   state: DictationState;
   settings: EchoSettings;
   history: HistoryRow[];
-  providerReady: boolean;
+  providerStatus: ProviderStatus;
   onToggle: () => void;
 }) {
   const recent = history.slice(0, 4);
@@ -39,8 +40,8 @@ export function HomePage({
         </section>
         <section className="panel">
           <span className="panel-label">Provider</span>
-          <strong>{providerReady ? "Configured" : "Needs API config"}</strong>
-          <small>No secrets shown</small>
+          <strong>{providerStatus.reachable ? "Local API reachable" : "Local API offline"}</strong>
+          <small>{providerStatus.apiBaseUrl}</small>
         </section>
         <section className="panel">
           <span className="panel-label">Usage</span>

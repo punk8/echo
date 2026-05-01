@@ -4,6 +4,7 @@ import type { HistoryRow } from "../../main/storage/historyRepository";
 import type { EchoSettings } from "../../main/storage/settingsRepository";
 import type { AudioRecorderResult } from "../recording/audioRecorder";
 import type { PermissionStatusSnapshot } from "../../main/platform/permissions";
+import type { ProviderStatus } from "../../main/dictation/providerStatus";
 
 export interface AppStateSnapshot {
   state: DictationState;
@@ -15,6 +16,7 @@ export const desktopApi = {
   startDictation: () => window.echo.startDictation() as Promise<AppStateSnapshot>,
   stopDictation: () => window.echo.stopDictation() as Promise<AppStateSnapshot>,
   cancelDictation: () => window.echo.cancelDictation() as Promise<AppStateSnapshot>,
+  getProviderStatus: () => window.echo.getProviderStatus() as Promise<ProviderStatus>,
   listHistory: () => window.echo.listHistory() as Promise<HistoryRow[]>,
   deleteHistoryRow: (id: string) => window.echo.deleteHistoryRow(id) as Promise<void>,
   clearHistory: () => window.echo.clearHistory() as Promise<void>,
@@ -42,6 +44,7 @@ declare global {
       startDictation: () => Promise<unknown>;
       stopDictation: () => Promise<unknown>;
       cancelDictation: () => Promise<unknown>;
+      getProviderStatus: () => Promise<unknown>;
       listHistory: () => Promise<unknown>;
       deleteHistoryRow: (id: string) => Promise<unknown>;
       clearHistory: () => Promise<unknown>;

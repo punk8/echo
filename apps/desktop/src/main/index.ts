@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { app, BrowserWindow, ipcMain, shell } from "electron";
-import path from "node:path";
 import { processDictation } from "./dictation/backendClient";
+import { checkProviderStatus } from "./dictation/providerStatus";
 import { createRendererRecorderBridge } from "./dictation/rendererRecorderBridge";
 import { createDictationSessionController } from "./dictation/sessionController";
 import { getUserDataPath } from "./appPaths";
@@ -83,6 +83,10 @@ if (!gotLock) {
       },
       repositories: { history, settings, dictionary }
     });
+    const dictationHandlers = {
+      ...controller,
+      getProviderStatus: () => checkProviderStatus({ apiBaseUrl: getApiBaseUrl() })
+    };
 
     const shortcutController = createDictationShortcutController({
       initialAccelerator: settings.getSettings().shortcut,
@@ -101,7 +105,7 @@ if (!gotLock) {
         requestMicrophonePermission,
         requestAccessibilityPermission
       },
-      dictation: controller,
+      dictation: dictationHandlers,
       onSettingsSaved: (nextSettings) => {
         const shortcutResult = shortcutController.replaceShortcut(nextSettings.shortcut || DEFAULT_DICTATION_SHORTCUT);
         if (!shortcutResult.registered) {

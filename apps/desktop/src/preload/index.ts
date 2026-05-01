@@ -5,6 +5,7 @@ const echoApi = {
   startDictation: () => ipcRenderer.invoke("echo:start-dictation"),
   stopDictation: () => ipcRenderer.invoke("echo:stop-dictation"),
   cancelDictation: () => ipcRenderer.invoke("echo:cancel-dictation"),
+  getProviderStatus: () => ipcRenderer.invoke("echo:get-provider-status"),
   captureContext: () => ipcRenderer.invoke("echo:capture-context"),
   listHistory: () => ipcRenderer.invoke("echo:list-history"),
   deleteHistoryRow: (id: string) => ipcRenderer.invoke("echo:delete-history-row", id),

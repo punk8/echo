@@ -9,6 +9,7 @@ import { HomePage } from "./pages/HomePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import type { DictionaryTermRow } from "../main/storage/dictionaryRepository";
 import type { PermissionStatusSnapshot } from "../main/platform/permissions";
+import type { ProviderStatus } from "../main/dictation/providerStatus";
 import type { HistoryRow } from "../main/storage/historyRepository";
 import type { EchoSettings } from "../main/storage/settingsRepository";
 import { createAudioRecorder, type AudioRecorder } from "./recording/audioRecorder";
@@ -28,6 +29,10 @@ export function App() {
   const [permissions, setPermissions] = useState<PermissionStatusSnapshot>({
     microphone: "unknown",
     accessibility: "denied"
+  });
+  const [providerStatus, setProviderStatus] = useState<ProviderStatus>({
+    reachable: false,
+    apiBaseUrl: "http://127.0.0.1:43110"
   });
   const [error, setError] = useState<string | null>(null);
   const [overlayPayload, setOverlayPayload] = useState<MainOverlayPayload | null>(null);
@@ -121,7 +126,7 @@ export function App() {
           state={snapshot.state}
           settings={snapshot.settings}
           history={history}
-          providerReady
+          providerStatus={providerStatus}
           onToggle={() => void toggleDictation()}
         />
       ) : null}
@@ -158,16 +163,18 @@ export function App() {
   );
 
   async function refresh() {
-    const [appState, rows, terms, permissionStatus] = await Promise.all([
+    const [appState, rows, terms, permissionStatus, provider] = await Promise.all([
       desktopApi.getAppState(),
       desktopApi.listHistory(),
       desktopApi.listDictionaryTerms(),
-      desktopApi.getPermissionStatus()
+      desktopApi.getPermissionStatus(),
+      desktopApi.getProviderStatus()
     ]);
     setSnapshot(appState);
     setHistory(rows);
     setDictionary(terms);
     setPermissions(permissionStatus);
+    setProviderStatus(provider);
   }
 
   async function toggleDictation() {
