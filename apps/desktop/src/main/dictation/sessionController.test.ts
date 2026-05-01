@@ -350,6 +350,34 @@ describe("createDictationSessionController", () => {
     expect(deps.audioDucker.restore).toHaveBeenCalled();
   });
 
+  it("stores a clearly cancelled history row when recording is cancelled and history is enabled", async () => {
+    const { deps, historyRows } = createDeps();
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+    await controller.cancelDictation();
+
+    expect(historyRows[0]).toMatchObject({
+      id: "session-1",
+      status: "cancelled",
+      raw_text: "",
+      refined_text: "",
+      audio_local_path: null,
+      duration_ms: 0,
+      output_length: 0,
+      language: "auto",
+      focused_app_name: "TextEdit",
+      focused_app_bundle_id: "com.apple.TextEdit",
+      focused_app_window_title: "Untitled",
+      insertion_method: "none",
+      insertion_status: "not_inserted",
+      provider_asr: "not_started",
+      provider_llm: "not_started",
+      error_code: "dictation.cancelled",
+      timing_json: "{}"
+    });
+  });
+
   it("does not play interaction sounds when the setting is disabled", async () => {
     const { deps } = createDeps();
     deps.repositories.settings.getSettings.mockReturnValue({ ...defaultSettings, interactionSounds: false });

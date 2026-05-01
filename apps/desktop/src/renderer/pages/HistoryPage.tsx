@@ -66,7 +66,10 @@ export function HistoryPage({
                 </span>
                 {row.raw_text && row.raw_text !== row.refined_text ? <span>Raw: {row.raw_text}</span> : null}
               </div>
-              <span className={`status-chip ${row.insertion_status}`}>{row.insertion_status}</span>
+              <div className="row-chips">
+                <span className={`status-chip status-${row.status}`}>{formatStatus(row.status)}</span>
+                <span className={`status-chip ${row.insertion_status}`}>{row.insertion_status}</span>
+              </div>
               <div className="row-actions">
                 <button
                   type="button"
@@ -105,4 +108,8 @@ function formatDuration(value: number) {
 
 function formatProviders(row: HistoryRow) {
   return `${row.provider_asr} / ${row.provider_llm}`;
+}
+
+function formatStatus(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }

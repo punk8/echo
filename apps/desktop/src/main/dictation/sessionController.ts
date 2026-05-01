@@ -274,6 +274,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
     } finally {
       await maybeRestoreOtherAudio(session);
     }
+    await storeHistory(deps.repositories.settings.getSettings(), buildCancelledHistoryRow(session));
     deps.overlay.hide();
     currentSession = undefined;
     return getAppState();
@@ -593,6 +594,28 @@ function buildErrorHistoryRow(input: {
     provider_asr: "unavailable",
     provider_llm: "unavailable",
     error_code: input.error.code,
+    timing_json: "{}"
+  };
+}
+
+function buildCancelledHistoryRow(session: CurrentSession): HistoryRowInput {
+  return {
+    id: session.sessionId,
+    status: "cancelled",
+    raw_text: "",
+    refined_text: "",
+    audio_local_path: null,
+    duration_ms: 0,
+    output_length: 0,
+    language: "auto",
+    focused_app_name: session.context.app_name,
+    focused_app_bundle_id: session.context.bundle_id,
+    focused_app_window_title: session.context.window_title,
+    insertion_method: "none",
+    insertion_status: "not_inserted",
+    provider_asr: "not_started",
+    provider_llm: "not_started",
+    error_code: "dictation.cancelled",
     timing_json: "{}"
   };
 }
