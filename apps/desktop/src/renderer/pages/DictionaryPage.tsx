@@ -5,12 +5,20 @@ type SourceFilter = "all" | "manual" | "learned";
 
 export function DictionaryPage({
   terms,
+  defaultLanguage = "auto",
   onAdd,
   onUpdate,
   onDelete
 }: {
   terms: DictionaryTermRow[];
-  onAdd: (term: string, aliases: string[], pronunciationHint: string | null, capitalization: string | null) => void;
+  defaultLanguage?: string;
+  onAdd: (
+    term: string,
+    aliases: string[],
+    pronunciationHint: string | null,
+    capitalization: string | null,
+    language: string
+  ) => void;
   onUpdate: (term: DictionaryTermRow) => void;
   onDelete: (id: string) => void;
 }) {
@@ -19,6 +27,7 @@ export function DictionaryPage({
   const [aliases, setAliases] = useState("");
   const [pronunciationHint, setPronunciationHint] = useState("");
   const [capitalization, setCapitalization] = useState("");
+  const [language, setLanguage] = useState(defaultLanguage);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const filtered = useMemo(() => filterDictionaryTerms(terms, query, sourceFilter), [query, sourceFilter, terms]);
 
@@ -35,11 +44,18 @@ export function DictionaryPage({
             event.preventDefault();
             const value = term.trim();
             if (value) {
-              onAdd(value, splitAliases(aliases), normalizeOptionalField(pronunciationHint), normalizeOptionalField(capitalization));
+              onAdd(
+                value,
+                splitAliases(aliases),
+                normalizeOptionalField(pronunciationHint),
+                normalizeOptionalField(capitalization),
+                normalizeLanguage(language)
+              );
               setTerm("");
               setAliases("");
               setPronunciationHint("");
               setCapitalization("");
+              setLanguage(defaultLanguage);
             }
           }}
         >
@@ -62,6 +78,7 @@ export function DictionaryPage({
             placeholder="Capitalization"
             aria-label="Capitalization"
           />
+          <input value={language} onChange={(event) => setLanguage(event.target.value)} placeholder="Language" aria-label="Language" />
           <button type="submit">Add</button>
         </form>
       </header>
@@ -139,6 +156,10 @@ function normalizeOptionalField(value: string) {
   return trimmed || null;
 }
 
+function normalizeLanguage(value: string) {
+  return value.trim() || "auto";
+}
+
 function formatSourceFilter(source: SourceFilter) {
   switch (source) {
     case "all":
@@ -157,11 +178,13 @@ function promptDictionaryUpdate(item: DictionaryTermRow): DictionaryTermRow {
     window.prompt("Pronunciation", item.pronunciation_hint ?? "") ?? item.pronunciation_hint ?? "";
   const nextCapitalization =
     window.prompt("Capitalization", item.capitalization ?? "") ?? item.capitalization ?? "";
+  const nextLanguage = window.prompt("Language", item.language) ?? item.language;
   return {
     ...item,
     term: nextTerm,
     aliases: splitAliases(nextAliases),
     pronunciation_hint: normalizeOptionalField(nextPronunciation),
-    capitalization: normalizeOptionalField(nextCapitalization)
+    capitalization: normalizeOptionalField(nextCapitalization),
+    language: normalizeLanguage(nextLanguage)
   };
 }

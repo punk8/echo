@@ -29,6 +29,7 @@ describe("DictionaryPage", () => {
     expect(markup).toContain("Aliases");
     expect(markup).toContain("Pronunciation");
     expect(markup).toContain("Capitalization");
+    expect(markup).toContain("Language");
     expect(markup).toContain("EH-koh");
     expect(markup).toContain("Edit");
   });
