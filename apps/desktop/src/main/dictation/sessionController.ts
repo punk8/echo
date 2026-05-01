@@ -36,7 +36,7 @@ export interface DictationSessionControllerDeps {
     showRecording: (input: { sessionId: string; context: DictationContext }) => void;
     showProcessing: (input: { sessionId: string }) => void;
     showInserting: (input: { sessionId: string }) => void;
-    showError: (input: { sessionId: string; code: string; message: string }) => void;
+    showError: (input: { sessionId: string; code: string; message: string; recoverableText?: string }) => void;
     showComplete: (input: { sessionId: string }) => void;
     hide: () => void;
   };
@@ -140,11 +140,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
         code: backendError.code,
         message: backendError.message
       });
-      deps.overlay.showError({
-        sessionId: session.sessionId,
-        code: backendError.code,
-        message: backendError.message
-      });
+      deps.overlay.showError(buildErrorOverlayInput(session.sessionId, backendError));
       currentSession = undefined;
       return getAppState();
     }
@@ -183,6 +179,20 @@ export function createDictationSessionController(deps: DictationSessionControlle
     deps.repositories.history.insertHistoryRow(row);
     deps.repositories.history.pruneHistory(settings.historyRetention);
   }
+}
+
+function buildErrorOverlayInput(sessionId: string, error: BackendDictationError) {
+  const input: { sessionId: string; code: string; message: string; recoverableText?: string } = {
+    sessionId,
+    code: error.code,
+    message: error.message
+  };
+
+  if (error.rawText.trim().length > 0) {
+    input.recoverableText = error.rawText;
+  }
+
+  return input;
 }
 
 function isSameInsertionTarget(startContext: DictationContext, currentContext: DictationContext) {

@@ -121,7 +121,16 @@ export function App() {
   }, [recordingStartedAt]);
 
   const overlayState = useMemo(
-    () => buildOverlayState(snapshot.state, overlayPayload, levelSamples, elapsedMs, toggleDictation, cancelDictation, error),
+    () =>
+      buildOverlayState(
+        snapshot.state,
+        overlayPayload,
+        levelSamples,
+        elapsedMs,
+        toggleDictation,
+        cancelDictation,
+        error
+      ),
     [snapshot.state, overlayPayload, levelSamples, elapsedMs, error]
   );
 
@@ -259,21 +268,22 @@ export function App() {
   }
 }
 
-function buildOverlayState(
+export function buildOverlayState(
   state: DictationState,
   overlayPayload: MainOverlayPayload | null,
   levelSamples: number[],
   elapsedMs: number,
   onFinish: () => void,
   onCancel: () => void,
-  error: string | null
+  error: string | null,
+  writeClipboard: (text: string) => void | Promise<void> = (text) => navigator.clipboard.writeText(text)
 ): OverlayState {
   if (error) {
     return {
       status: "error",
       message: error,
       onRetry: onFinish,
-      onCopy: () => void navigator.clipboard.writeText(error),
+      onCopy: () => void writeClipboard(error),
       onDismiss: onCancel
     };
   }
@@ -298,11 +308,12 @@ function buildOverlayState(
   }
   if (overlayPayload?.status === "error") {
     const message = overlayPayload.message ?? "Dictation failed.";
+    const copyText = overlayPayload.recoverableText ?? message;
     return {
       status: "error",
       message,
       onRetry: onFinish,
-      onCopy: () => void navigator.clipboard.writeText(message),
+      onCopy: () => void writeClipboard(copyText),
       onDismiss: onCancel
     };
   }
@@ -323,26 +334,28 @@ function buildOverlayState(
       status: "error",
       message: state.message,
       onRetry: onFinish,
-      onCopy: () => void navigator.clipboard.writeText(state.message),
+      onCopy: () => void writeClipboard(state.message),
       onDismiss: onCancel
     };
   }
   return { status: "complete" };
 }
 
-interface MainOverlayPayload {
+export interface MainOverlayPayload {
   status: "recording" | "processing" | "inserting" | "complete" | "error";
   sessionId: string;
   message?: string;
+  recoverableText?: string;
 }
 
-function isMainOverlayPayload(payload: unknown): payload is MainOverlayPayload {
+export function isMainOverlayPayload(payload: unknown): payload is MainOverlayPayload {
   if (!payload || typeof payload !== "object") {
     return false;
   }
-  const value = payload as { status?: unknown; sessionId?: unknown };
+  const value = payload as { status?: unknown; sessionId?: unknown; recoverableText?: unknown };
   return (
     typeof value.sessionId === "string" &&
+    (value.recoverableText === undefined || typeof value.recoverableText === "string") &&
     (value.status === "recording" ||
       value.status === "processing" ||
       value.status === "inserting" ||

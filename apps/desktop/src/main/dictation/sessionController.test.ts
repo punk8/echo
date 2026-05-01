@@ -165,6 +165,29 @@ describe("createDictationSessionController", () => {
     });
   });
 
+  it("passes raw transcript to error recovery when backend returns recoverable text", async () => {
+    const { deps } = createDeps();
+    deps.backend.mockRejectedValueOnce(
+      new BackendDictationError({
+        code: "server.refine_failed",
+        message: "Dictation refinement failed.",
+        recoverable: true,
+        rawText: "raw transcript"
+      })
+    );
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+    await controller.stopDictation();
+
+    expect(deps.overlay.showError).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      code: "server.refine_failed",
+      message: "Dictation refinement failed.",
+      recoverableText: "raw transcript"
+    });
+  });
+
   it("does not store history when retention is never", async () => {
     const { deps, historyRows } = createDeps();
     deps.repositories.settings.getSettings.mockReturnValue({
