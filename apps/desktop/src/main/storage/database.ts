@@ -19,6 +19,7 @@ function migrate(db: Database) {
       refined_text TEXT NOT NULL,
       audio_local_path TEXT,
       duration_ms INTEGER NOT NULL,
+      output_length INTEGER NOT NULL DEFAULT 0,
       language TEXT NOT NULL,
       focused_app_name TEXT NOT NULL,
       focused_app_bundle_id TEXT NOT NULL,
@@ -51,6 +52,7 @@ function migrate(db: Database) {
   `);
   addColumnIfMissing(db, "dictionary_terms", "pronunciation_hint", "TEXT");
   addColumnIfMissing(db, "dictionary_terms", "capitalization", "TEXT");
+  addColumnIfMissing(db, "dictation_history", "output_length", "INTEGER NOT NULL DEFAULT 0");
 }
 
 function addColumnIfMissing(db: Database, tableName: string, columnName: string, columnDefinition: string) {

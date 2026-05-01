@@ -50,7 +50,8 @@ export function HistoryPage({
               <div className="row-main">
                 <strong>{row.refined_text || row.raw_text || row.error_code}</strong>
                 <span>
-                  {formatDate(row.created_at)} · {row.focused_app_name} · {row.provider_asr}
+                  {formatDate(row.created_at)} · {row.focused_app_name} · {formatDuration(row.duration_ms)} ·{" "}
+                  {row.output_length} chars · {row.provider_asr}
                 </span>
               </div>
               <span className={`status-chip ${row.insertion_status}`}>{row.insertion_status}</span>
@@ -75,4 +76,8 @@ export function HistoryPage({
 
 function formatDate(value: string) {
   return new Date(value).toLocaleString([], { month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+function formatDuration(value: number) {
+  return `${(value / 1000).toFixed(1)}s`;
 }

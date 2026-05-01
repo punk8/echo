@@ -8,6 +8,7 @@ export interface HistoryRowInput {
   refined_text: string;
   audio_local_path: string | null;
   duration_ms: number;
+  output_length: number;
   language: string;
   focused_app_name: string;
   focused_app_bundle_id: string;
@@ -31,11 +32,11 @@ export function createHistoryRepository(db: Database) {
       db.prepare(
         `
           INSERT INTO dictation_history (
-            id, status, raw_text, refined_text, audio_local_path, duration_ms, language,
+            id, status, raw_text, refined_text, audio_local_path, duration_ms, output_length, language,
             focused_app_name, focused_app_bundle_id, focused_app_window_title,
             insertion_method, insertion_status, provider_asr, provider_llm, error_code, timing_json
           ) VALUES (
-            @id, @status, @raw_text, @refined_text, @audio_local_path, @duration_ms, @language,
+            @id, @status, @raw_text, @refined_text, @audio_local_path, @duration_ms, @output_length, @language,
             @focused_app_name, @focused_app_bundle_id, @focused_app_window_title,
             @insertion_method, @insertion_status, @provider_asr, @provider_llm, @error_code, @timing_json
           )

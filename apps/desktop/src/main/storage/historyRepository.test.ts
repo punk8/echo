@@ -14,6 +14,7 @@ describe("historyRepository", () => {
       refined_text: "Hello.",
       audio_local_path: "/tmp/older.webm",
       duration_ms: 1000,
+      output_length: "Hello.".length,
       language: "en",
       focused_app_name: "TextEdit",
       focused_app_bundle_id: "com.apple.TextEdit",
@@ -32,6 +33,7 @@ describe("historyRepository", () => {
       refined_text: "Tomorrow at three.",
       audio_local_path: "/tmp/newer.webm",
       duration_ms: 1200,
+      output_length: "Tomorrow at three.".length,
       language: "en",
       focused_app_name: "TextEdit",
       focused_app_bundle_id: "com.apple.TextEdit",
@@ -49,6 +51,8 @@ describe("historyRepository", () => {
     expect(rows.map((row) => row.id)).toEqual(["newer", "older"]);
     expect(rows[0]?.refined_text).toBe("Tomorrow at three.");
     expect(rows[0]?.provider_asr).toBe("openai:gpt-4o-transcribe");
+    expect(rows[0]?.duration_ms).toBe(1200);
+    expect(rows[0]?.output_length).toBe("Tomorrow at three.".length);
   });
 
   it("clears all history rows", () => {
@@ -110,6 +114,7 @@ function createHistoryRow(id: string) {
     refined_text: "Hello.",
     audio_local_path: `/tmp/${id}.webm`,
     duration_ms: 1000,
+    output_length: "Hello.".length,
     language: "en",
     focused_app_name: "TextEdit",
     focused_app_bundle_id: "com.apple.TextEdit",
