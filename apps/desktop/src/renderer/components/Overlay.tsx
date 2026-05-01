@@ -1,4 +1,5 @@
 export type OverlayState =
+  | { status: "idle" }
   | {
       status: "recording";
       elapsedMs: number;
@@ -23,6 +24,10 @@ export type OverlayState =
     };
 
 export function Overlay({ state }: { state: OverlayState }) {
+  if (state.status === "idle") {
+    return null;
+  }
+
   return (
     <div className={`overlay overlay-${state.status}`} role="status" aria-live="polite">
       {state.status === "recording" ? (

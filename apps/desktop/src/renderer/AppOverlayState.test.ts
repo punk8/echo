@@ -8,6 +8,12 @@ describe("buildOverlayState", () => {
     expect(isOverlayRouteHash("#settings")).toBe(false);
   });
 
+  it("keeps the overlay blank before the main process sends a state payload", () => {
+    const overlayState = buildOverlayState({ status: "idle" }, null, [], 0, vi.fn(), vi.fn(), null);
+
+    expect(overlayState).toEqual({ status: "idle" });
+  });
+
   it("copies recoverable text from overlay errors when available", () => {
     const writeClipboard = vi.fn();
     const overlayState = buildOverlayState(

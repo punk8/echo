@@ -451,7 +451,7 @@ export function buildOverlayState(
       onDismiss
     };
   }
-  return { status: "complete" };
+  return { status: "idle" };
 }
 
 export interface MainOverlayPayload {

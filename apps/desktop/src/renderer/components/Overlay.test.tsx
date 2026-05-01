@@ -3,6 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 import { Overlay } from "./Overlay";
 
 describe("Overlay", () => {
+  it("renders nothing for the idle state", () => {
+    const markup = renderToStaticMarkup(<Overlay state={{ status: "idle" }} />);
+
+    expect(markup).toBe("");
+  });
+
   it("shows elapsed time, waveform label, Cancel, and Finish while recording", () => {
     const markup = renderToStaticMarkup(
       <Overlay state={{ status: "recording", elapsedMs: 7200, levelSamples: [0.2, 0.6], onCancel: vi.fn(), onFinish: vi.fn() }} />
