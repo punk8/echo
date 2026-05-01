@@ -8,4 +8,22 @@ describe("buildFallbackContext", () => {
     expect(context.app_name).toBe("TextEdit");
     expect(context.writable).toBe(true);
   });
+
+  it("marks focused text controls as writable", () => {
+    const context = buildFallbackContext({ appName: "TextEdit", focusedRole: "AXTextArea" });
+
+    expect(context.writable).toBe(true);
+  });
+
+  it("marks focused non-text controls as not writable when accessibility role is available", () => {
+    const context = buildFallbackContext({ appName: "Preview", focusedRole: "AXButton" });
+
+    expect(context.writable).toBe(false);
+  });
+
+  it("tracks selected text when accessibility reports a selection", () => {
+    const context = buildFallbackContext({ appName: "TextEdit", focusedRole: "AXTextArea", selectionPresent: true });
+
+    expect(context.selection_present).toBe(true);
+  });
 });
