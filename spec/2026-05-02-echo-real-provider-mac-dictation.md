@@ -420,6 +420,7 @@ Server/config errors:
 - `audio.poor_quality`
 - `server.audio_too_large`
 - `server.unsupported_audio_format`
+- `server.invalid_duration`
 - `server.invalid_request`
 
 Recovery requirements:
