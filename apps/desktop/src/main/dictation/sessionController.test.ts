@@ -286,7 +286,8 @@ describe("createDictationSessionController", () => {
     expect(deps.overlay.showError).toHaveBeenCalledWith({
       sessionId: "session-1",
       code: "server.asr_failed",
-      message: "Speech recognition failed."
+      message: "Speech recognition failed.",
+      retryHistoryId: "session-1"
     });
     expect(snapshot.state).toEqual({
       status: "error",
@@ -315,7 +316,8 @@ describe("createDictationSessionController", () => {
       sessionId: "session-1",
       code: "server.refine_failed",
       message: "Dictation refinement failed.",
-      recoverableText: "raw transcript"
+      recoverableText: "raw transcript",
+      retryHistoryId: "session-1"
     });
   });
 

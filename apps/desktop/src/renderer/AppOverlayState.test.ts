@@ -60,6 +60,37 @@ describe("buildOverlayState", () => {
     expect(onCancel).not.toHaveBeenCalled();
   });
 
+  it("retries the retained recording when an overlay error provides a history id", () => {
+    const onFinish = vi.fn();
+    const onRetryHistory = vi.fn();
+    const overlayState = buildOverlayState(
+      { status: "error", sessionId: "session-1", code: "server.refine_failed", message: "Dictation refinement failed." },
+      {
+        status: "error",
+        sessionId: "session-1",
+        message: "Dictation refinement failed.",
+        retryHistoryId: "session-1"
+      },
+      [],
+      0,
+      onFinish,
+      vi.fn(),
+      null,
+      vi.fn(),
+      vi.fn(),
+      onRetryHistory
+    );
+
+    if (overlayState.status !== "error") {
+      throw new Error("expected error overlay state");
+    }
+
+    overlayState.onRetry();
+
+    expect(onRetryHistory).toHaveBeenCalledWith("session-1");
+    expect(onFinish).not.toHaveBeenCalled();
+  });
+
   it("maps copied overlay payloads to manual paste state", () => {
     const overlayState = buildOverlayState(
       { status: "complete", sessionId: "session-1" },

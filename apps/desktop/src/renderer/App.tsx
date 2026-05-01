@@ -136,7 +136,8 @@ export function App() {
         cancelDictation,
         error,
         undefined,
-        dismissOverlay
+        dismissOverlay,
+        retryHistoryRow
       ),
     [snapshot.state, overlayPayload, levelSamples, elapsedMs, error]
   );
@@ -310,7 +311,8 @@ export function buildOverlayState(
   onCancel: () => void,
   error: string | null,
   writeClipboard: (text: string) => void | Promise<void> = (text) => navigator.clipboard.writeText(text),
-  onDismiss: () => void = onCancel
+  onDismiss: () => void = onCancel,
+  onRetryHistory: (historyId: string) => void | Promise<void> = () => onFinish()
 ): OverlayState {
   if (error) {
     return {
@@ -349,11 +351,12 @@ export function buildOverlayState(
   if (overlayPayload?.status === "error") {
     const message = overlayPayload.message ?? "Dictation failed.";
     const copyText = overlayPayload.recoverableText ?? message;
+    const retryHistoryId = overlayPayload.retryHistoryId;
     return {
       status: "error",
       message,
       ...(overlayPayload.recoverableText ? { recoverableText: overlayPayload.recoverableText } : {}),
-      onRetry: onFinish,
+      onRetry: retryHistoryId ? () => void onRetryHistory(retryHistoryId) : onFinish,
       onCopy: () => void writeClipboard(copyText),
       onDismiss
     };
@@ -387,16 +390,18 @@ export interface MainOverlayPayload {
   sessionId: string;
   message?: string;
   recoverableText?: string;
+  retryHistoryId?: string;
 }
 
 export function isMainOverlayPayload(payload: unknown): payload is MainOverlayPayload {
   if (!payload || typeof payload !== "object") {
     return false;
   }
-  const value = payload as { status?: unknown; sessionId?: unknown; recoverableText?: unknown };
+  const value = payload as { status?: unknown; sessionId?: unknown; recoverableText?: unknown; retryHistoryId?: unknown };
   return (
     typeof value.sessionId === "string" &&
     (value.recoverableText === undefined || typeof value.recoverableText === "string") &&
+    (value.retryHistoryId === undefined || typeof value.retryHistoryId === "string") &&
     (value.status === "recording" ||
       value.status === "finalizing" ||
       value.status === "processing" ||

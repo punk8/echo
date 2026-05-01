@@ -98,9 +98,16 @@ if (!gotLock) {
           overlay.webContents.send("echo:overlay-state", { status: "copied", sessionId });
           setTimeout(() => overlay.hide(), 3000);
         },
-        showError: ({ sessionId, code, message, recoverableText }) => {
+        showError: ({ sessionId, code, message, recoverableText, retryHistoryId }) => {
           overlay.showInactive();
-          overlay.webContents.send("echo:overlay-state", { status: "error", sessionId, code, message, recoverableText });
+          overlay.webContents.send("echo:overlay-state", {
+            status: "error",
+            sessionId,
+            code,
+            message,
+            recoverableText,
+            retryHistoryId
+          });
         },
         showComplete: ({ sessionId }) => {
           overlay.webContents.send("echo:overlay-state", { status: "complete", sessionId });

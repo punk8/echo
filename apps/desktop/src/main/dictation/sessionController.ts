@@ -42,7 +42,13 @@ export interface DictationSessionControllerDeps {
     showProcessing: (input: { sessionId: string }) => void;
     showInserting: (input: { sessionId: string }) => void;
     showCopied: (input: { sessionId: string }) => void;
-    showError: (input: { sessionId: string; code: string; message: string; recoverableText?: string }) => void;
+    showError: (input: {
+      sessionId: string;
+      code: string;
+      message: string;
+      recoverableText?: string;
+      retryHistoryId?: string;
+    }) => void;
     showComplete: (input: { sessionId: string }) => void;
     hide: () => void;
   };
@@ -218,12 +224,13 @@ export function createDictationSessionController(deps: DictationSessionControlle
       const backendError = normalizeBackendError(error);
       const settings = deps.repositories.settings.getSettings();
       await storeHistory(settings, buildErrorHistoryRow({ session, recording, error: backendError }));
+      const retryHistoryId = settings.historyRetention !== "never" && recording.localPath ? session.sessionId : undefined;
       state = applyDictationEvent(state, {
         type: "fail",
         code: backendError.code,
         message: backendError.message
       });
-      deps.overlay.showError(buildErrorOverlayInput(session.sessionId, backendError));
+      deps.overlay.showError(buildErrorOverlayInput(session.sessionId, backendError, retryHistoryId));
       currentSession = undefined;
       return getAppState();
     }
@@ -377,8 +384,8 @@ function normalizeRecorderStopError(_error: unknown) {
   };
 }
 
-function buildErrorOverlayInput(sessionId: string, error: BackendDictationError) {
-  const input: { sessionId: string; code: string; message: string; recoverableText?: string } = {
+function buildErrorOverlayInput(sessionId: string, error: BackendDictationError, retryHistoryId?: string) {
+  const input: { sessionId: string; code: string; message: string; recoverableText?: string; retryHistoryId?: string } = {
     sessionId,
     code: error.code,
     message: error.message
@@ -386,6 +393,9 @@ function buildErrorOverlayInput(sessionId: string, error: BackendDictationError)
 
   if (error.rawText.trim().length > 0) {
     input.recoverableText = error.rawText;
+  }
+  if (retryHistoryId) {
+    input.retryHistoryId = retryHistoryId;
   }
 
   return input;
