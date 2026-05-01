@@ -289,7 +289,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
 
     if (!source || !isRetryableHistoryRow(source)) {
       const code = "history.retry_unavailable";
-      const message = "Retry is available only when a failed recording is still retained locally.";
+      const message = "Retry is available only when a failed or cancelled recording is still retained locally.";
       state = { status: "error", sessionId, code, message };
       deps.overlay.showError({ sessionId, code, message });
       return getAppState();

@@ -74,7 +74,11 @@ export function HistoryPage({
                 <button
                   type="button"
                   disabled={!canRetryHistoryRow(row)}
-                  title={canRetryHistoryRow(row) ? "Retry retained recording" : "Retry unavailable without a failed retained recording"}
+                  title={
+                    canRetryHistoryRow(row)
+                      ? "Retry retained recording"
+                      : "Retry unavailable without a failed or cancelled retained recording"
+                  }
                   onClick={() => onRetry(row.id)}
                 >
                   Retry

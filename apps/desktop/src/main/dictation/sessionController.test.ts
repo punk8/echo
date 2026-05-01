@@ -824,4 +824,45 @@ describe("createDictationSessionController", () => {
       message: "The retained recording could not be read. Try a new dictation."
     });
   });
+
+  it("explains retry requires failed or cancelled rows with retained audio", async () => {
+    const { deps } = createDeps();
+    deps.repositories.history.getHistoryRow.mockReturnValue({
+      id: "cancelled-1",
+      created_at: "2026-05-02T00:00:00.000Z",
+      updated_at: "2026-05-02T00:00:00.000Z",
+      status: "cancelled",
+      raw_text: "",
+      refined_text: "",
+      audio_local_path: null,
+      duration_ms: 0,
+      output_length: 0,
+      language: "en",
+      focused_app_name: "TextEdit",
+      focused_app_bundle_id: "com.apple.TextEdit",
+      focused_app_window_title: "Untitled",
+      insertion_method: "none",
+      insertion_status: "not_inserted",
+      provider_asr: "not_started",
+      provider_llm: "not_started",
+      error_code: "dictation.cancelled",
+      timing_json: "{}"
+    });
+    const controller = createDictationSessionController(deps);
+
+    const snapshot = await controller.retryHistoryRow("cancelled-1");
+
+    expect(deps.readLocalRecording).not.toHaveBeenCalled();
+    expect(deps.overlay.showError).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      code: "history.retry_unavailable",
+      message: "Retry is available only when a failed or cancelled recording is still retained locally."
+    });
+    expect(snapshot.state).toEqual({
+      status: "error",
+      sessionId: "session-1",
+      code: "history.retry_unavailable",
+      message: "Retry is available only when a failed or cancelled recording is still retained locally."
+    });
+  });
 });

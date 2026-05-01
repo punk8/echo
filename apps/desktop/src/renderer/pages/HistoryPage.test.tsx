@@ -190,6 +190,42 @@ describe("HistoryPage", () => {
     expect(canRetryHistoryRow({ ...retryable, audio_local_path: null })).toBe(false);
   });
 
+  it("explains retry requires a failed or cancelled row with retained audio", () => {
+    const cancelledWithoutAudio = {
+      ...createHistoryRow("cancelled-1"),
+      status: "cancelled",
+      raw_text: "",
+      refined_text: "",
+      audio_local_path: null,
+      insertion_method: "none",
+      insertion_status: "not_inserted",
+      error_code: "dictation.cancelled"
+    };
+    const markup = renderToStaticMarkup(
+      <HistoryPage
+        history={[cancelledWithoutAudio]}
+        settings={{
+          historyRetention: "1_week",
+          shortcut: "Alt+Space",
+          language: "auto",
+          microphoneDeviceId: "system",
+          interactionSounds: true,
+          muteOtherAudioWhileDictating: false,
+          launchAtLogin: false,
+          showDockIcon: true,
+          outputStyle: "balanced"
+        }}
+        onRetentionChange={vi.fn()}
+        onCopy={vi.fn()}
+        onDelete={vi.fn()}
+        onRetry={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
+
+    expect(markup).toContain("Retry unavailable without a failed or cancelled retained recording");
+  });
+
   it("only enables copying when a row has transcript text", () => {
     const completed = createHistoryRow("completed-1");
     const cancelled = {
