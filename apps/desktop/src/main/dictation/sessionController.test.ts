@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { BackendDictationError } from "./backendClient";
 import { createDictationSessionController } from "./sessionController";
+import type { EchoSettings } from "../storage/settingsRepository";
 
 const context = {
   app_name: "TextEdit",
@@ -54,7 +55,8 @@ function createDeps() {
       repositories: {
         history: {
           insertHistoryRow: vi.fn((row: unknown) => historyRows.push(row)),
-          updateInsertionStatus: vi.fn()
+          updateInsertionStatus: vi.fn(),
+          pruneHistory: vi.fn()
         },
         dictionary: {
           listDictionaryTerms: vi.fn(() => [
@@ -71,7 +73,7 @@ function createDeps() {
           ])
         },
         settings: {
-          getSettings: vi.fn(() => ({ historyRetention: "1_week" as const, shortcut: "Alt+Space", language: "auto" }))
+          getSettings: vi.fn<() => EchoSettings>(() => ({ historyRetention: "1_week", shortcut: "Alt+Space", language: "auto" }))
         }
       }
     }
@@ -146,5 +148,30 @@ describe("createDictationSessionController", () => {
       code: "server.asr_failed",
       message: "Speech recognition failed."
     });
+  });
+
+  it("does not store history when retention is never", async () => {
+    const { deps, historyRows } = createDeps();
+    deps.repositories.settings.getSettings.mockReturnValue({
+      historyRetention: "never",
+      shortcut: "Alt+Space",
+      language: "auto"
+    });
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+    await controller.stopDictation();
+
+    expect(historyRows).toEqual([]);
+  });
+
+  it("prunes history after storing a completed row", async () => {
+    const { deps } = createDeps();
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+    await controller.stopDictation();
+
+    expect(deps.repositories.history.pruneHistory).toHaveBeenCalledWith("1_week");
   });
 });

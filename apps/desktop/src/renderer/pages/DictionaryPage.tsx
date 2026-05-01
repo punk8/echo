@@ -4,14 +4,17 @@ import type { DictionaryTermRow } from "../../main/storage/dictionaryRepository"
 export function DictionaryPage({
   terms,
   onAdd,
+  onUpdate,
   onDelete
 }: {
   terms: DictionaryTermRow[];
-  onAdd: (term: string) => void;
+  onAdd: (term: string, aliases: string[]) => void;
+  onUpdate: (term: DictionaryTermRow) => void;
   onDelete: (id: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const [term, setTerm] = useState("");
+  const [aliases, setAliases] = useState("");
   const filtered = useMemo(
     () => terms.filter((item) => item.term.toLowerCase().includes(query.toLowerCase())),
     [query, terms]
@@ -30,12 +33,19 @@ export function DictionaryPage({
             event.preventDefault();
             const value = term.trim();
             if (value) {
-              onAdd(value);
+              onAdd(value, splitAliases(aliases));
               setTerm("");
+              setAliases("");
             }
           }}
         >
           <input value={term} onChange={(event) => setTerm(event.target.value)} placeholder="Term" aria-label="Term" />
+          <input
+            value={aliases}
+            onChange={(event) => setAliases(event.target.value)}
+            placeholder="Aliases"
+            aria-label="Aliases"
+          />
           <button type="submit">Add</button>
         </form>
       </header>
@@ -51,12 +61,34 @@ export function DictionaryPage({
               <span>{item.aliases.join(", ") || item.language}</span>
             </div>
             <span className="source-chip">{item.source}</span>
-            <button type="button" onClick={() => onDelete(item.id)}>
-              Delete
-            </button>
+            <div className="row-actions">
+              <button type="button" onClick={() => onUpdate(promptDictionaryUpdate(item))}>
+                Edit
+              </button>
+              <button type="button" onClick={() => onDelete(item.id)}>
+                Delete
+              </button>
+            </div>
           </article>
         ))}
       </section>
     </section>
   );
+}
+
+function splitAliases(value: string) {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function promptDictionaryUpdate(item: DictionaryTermRow): DictionaryTermRow {
+  const nextTerm = window.prompt("Term", item.term)?.trim() || item.term;
+  const nextAliases = window.prompt("Aliases", item.aliases.join(", ")) ?? item.aliases.join(", ");
+  return {
+    ...item,
+    term: nextTerm,
+    aliases: splitAliases(nextAliases)
+  };
 }

@@ -50,4 +50,51 @@ describe("historyRepository", () => {
     expect(rows[0]?.refined_text).toBe("Tomorrow at three.");
     expect(rows[0]?.provider_asr).toBe("openai:gpt-4o-transcribe");
   });
+
+  it("clears all history rows", () => {
+    const repo = createHistoryRepository(temp.db);
+    repo.insertHistoryRow(createHistoryRow("row-1"));
+    repo.insertHistoryRow(createHistoryRow("row-2"));
+
+    repo.clearHistory();
+
+    expect(repo.listHistory()).toEqual([]);
+  });
+
+  it("prunes rows older than the selected retention window", () => {
+    const repo = createHistoryRepository(temp.db);
+    repo.insertHistoryRow(createHistoryRow("old"));
+    repo.insertHistoryRow(createHistoryRow("new"));
+    temp.db
+      .prepare("UPDATE dictation_history SET created_at = ? WHERE id = ?")
+      .run("2026-04-20T00:00:00.000Z", "old");
+    temp.db
+      .prepare("UPDATE dictation_history SET created_at = ? WHERE id = ?")
+      .run("2026-05-01T00:00:00.000Z", "new");
+
+    repo.pruneHistory("1_week", new Date("2026-05-02T00:00:00.000Z"));
+
+    expect(repo.listHistory().map((row) => row.id)).toEqual(["new"]);
+  });
 });
+
+function createHistoryRow(id: string) {
+  return {
+    id,
+    status: "completed",
+    raw_text: "um hello",
+    refined_text: "Hello.",
+    audio_local_path: `/tmp/${id}.webm`,
+    duration_ms: 1000,
+    language: "en",
+    focused_app_name: "TextEdit",
+    focused_app_bundle_id: "com.apple.TextEdit",
+    focused_app_window_title: "Untitled",
+    insertion_method: "clipboard_paste",
+    insertion_status: "inserted",
+    provider_asr: "openai:gpt-4o-transcribe",
+    provider_llm: "openai-compatible:gpt-4o",
+    error_code: null,
+    timing_json: "{\"total_ms\":2000}"
+  };
+}

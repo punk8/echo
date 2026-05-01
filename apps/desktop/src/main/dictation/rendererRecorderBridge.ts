@@ -1,3 +1,5 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import type { WebContents } from "electron";
 import type { AudioFormat } from "@echo/shared";
 import type { RecordedAudio } from "./sessionController";
@@ -7,6 +9,8 @@ interface RendererRecorderBridgeDeps {
   ipcMain: {
     handle: (channel: string, listener: (event: unknown, payload: any) => unknown) => void;
   };
+  recordingsDir?: string;
+  writeRecording?: (filename: string, audio: Buffer) => Promise<string>;
   timeoutMs?: number;
 }
 
@@ -34,12 +38,12 @@ export function createRendererRecorderBridge(deps: RendererRecorderBridgeDeps) {
     resolvePending(starts, payload.sessionId, undefined);
   });
   deps.ipcMain.handle("echo:recorder-stopped", (_event, payload: RecorderStoppedPayload) => {
-    resolvePending(stops, payload.sessionId, {
-      audio: Buffer.from(new Uint8Array(payload.audio)),
-      audioFormat: payload.audioFormat,
-      durationMs: payload.durationMs,
-      localPath: payload.localPath
-    });
+    const audio = Buffer.from(new Uint8Array(payload.audio));
+    void resolveStoppedRecording(deps, payload, audio)
+      .then((recording) => resolvePending(stops, payload.sessionId, recording))
+      .catch((error: unknown) =>
+        rejectPending(stops, payload.sessionId, error instanceof Error ? error : new Error("audio.recording_save_failed"))
+      );
   });
   deps.ipcMain.handle("echo:recorder-failed", (_event, payload: RecorderFailedPayload) => {
     rejectPending(starts, payload.sessionId, new Error(payload.message));
@@ -65,6 +69,37 @@ export function createRendererRecorderBridge(deps: RendererRecorderBridgeDeps) {
       rejectPending(stops, sessionId, new Error("audio.recording_cancelled"));
     }
   };
+}
+
+async function resolveStoppedRecording(
+  deps: RendererRecorderBridgeDeps,
+  payload: RecorderStoppedPayload,
+  audio: Buffer
+): Promise<RecordedAudio> {
+  return {
+    audio,
+    audioFormat: payload.audioFormat,
+    durationMs: payload.durationMs,
+    localPath: await resolveLocalPath(deps, payload, audio)
+  };
+}
+
+async function resolveLocalPath(deps: RendererRecorderBridgeDeps, payload: RecorderStoppedPayload, audio: Buffer) {
+  if (payload.localPath) {
+    return payload.localPath;
+  }
+  if (!deps.recordingsDir) {
+    return null;
+  }
+
+  const filename = path.join(deps.recordingsDir, `${payload.sessionId}.${payload.audioFormat}`);
+  if (deps.writeRecording) {
+    return deps.writeRecording(filename, audio);
+  }
+
+  await mkdir(deps.recordingsDir, { recursive: true });
+  await writeFile(filename, audio);
+  return filename;
 }
 
 interface Pending<T> {

@@ -42,6 +42,7 @@ export interface DictationSessionControllerDeps {
     history: {
       insertHistoryRow: (row: HistoryRowInput) => void;
       updateInsertionStatus: (id: string, insertionStatus: string) => void;
+      pruneHistory: (retention: EchoSettings["historyRetention"]) => void;
     };
     dictionary: {
       listDictionaryTerms: () => DictionaryTermRow[];
@@ -118,14 +119,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
       state = applyDictationEvent(state, { type: "insert_started" });
       const insertion = await deps.insertText(response.refined_text);
 
-      deps.repositories.history.insertHistoryRow(
-        buildCompletedHistoryRow({
-          session,
-          recording,
-          response,
-          insertion
-        })
-      );
+      storeHistory(settings, buildCompletedHistoryRow({ session, recording, response, insertion }));
 
       state = applyDictationEvent(state, { type: "completed" });
       deps.overlay.showComplete({ sessionId: session.sessionId });
@@ -133,13 +127,8 @@ export function createDictationSessionController(deps: DictationSessionControlle
       return getAppState();
     } catch (error) {
       const backendError = normalizeBackendError(error);
-      deps.repositories.history.insertHistoryRow(
-        buildErrorHistoryRow({
-          session,
-          recording,
-          error: backendError
-        })
-      );
+      const settings = deps.repositories.settings.getSettings();
+      storeHistory(settings, buildErrorHistoryRow({ session, recording, error: backendError }));
       state = applyDictationEvent(state, {
         type: "fail",
         code: backendError.code,
@@ -178,6 +167,15 @@ export function createDictationSessionController(deps: DictationSessionControlle
       case_sensitive: term.case_sensitive,
       source: term.source
     }));
+  }
+
+  function storeHistory(settings: EchoSettings, row: HistoryRowInput) {
+    if (settings.historyRetention === "never") {
+      return;
+    }
+
+    deps.repositories.history.insertHistoryRow(row);
+    deps.repositories.history.pruneHistory(settings.historyRetention);
   }
 }
 

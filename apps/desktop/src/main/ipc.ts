@@ -35,6 +35,7 @@ export interface RegisterIpcHandlersDeps {
     stopDictation: () => Promise<AppStateSnapshot>;
     cancelDictation: () => Promise<AppStateSnapshot>;
   };
+  onSettingsSaved?: (settings: EchoSettings) => void;
 }
 
 export function registerIpcHandlers(deps: RegisterIpcHandlersDeps) {
@@ -48,10 +49,16 @@ export function registerIpcHandlers(deps: RegisterIpcHandlersDeps) {
   ipcMain.handle("echo:delete-history-row", (_event, id: string) => {
     deps.repositories.history.deleteHistoryRow(id);
   });
+  ipcMain.handle("echo:clear-history", () => {
+    deps.repositories.history.clearHistory();
+  });
 
   ipcMain.handle("echo:list-dictionary-terms", () => deps.repositories.dictionary.listDictionaryTerms());
   ipcMain.handle("echo:add-dictionary-term", (_event, term) => {
     deps.repositories.dictionary.addDictionaryTerm(term);
+  });
+  ipcMain.handle("echo:update-dictionary-term", (_event, term) => {
+    deps.repositories.dictionary.updateDictionaryTerm(term);
   });
   ipcMain.handle("echo:delete-dictionary-term", (_event, id: string) => {
     deps.repositories.dictionary.deleteDictionaryTerm(id);
@@ -60,7 +67,9 @@ export function registerIpcHandlers(deps: RegisterIpcHandlersDeps) {
   ipcMain.handle("echo:get-settings", () => deps.repositories.settings.getSettings());
   ipcMain.handle("echo:save-settings", (_event, settings: Partial<EchoSettings>) => {
     deps.repositories.settings.saveSettings(settings);
-    return deps.repositories.settings.getSettings();
+    const next = deps.repositories.settings.getSettings();
+    deps.onSettingsSaved?.(next);
+    return next;
   });
 
   ipcMain.handle("echo:show-overlay", () => {

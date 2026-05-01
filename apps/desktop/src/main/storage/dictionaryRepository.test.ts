@@ -23,4 +23,32 @@ describe("dictionaryRepository", () => {
     expect(rows[0]?.term).toBe("Echo");
     expect(rows[0]?.aliases).toEqual(["echo app"]);
   });
+
+  it("updates existing terms", () => {
+    const repo = createDictionaryRepository(temp.db);
+    repo.addDictionaryTerm({
+      id: "term-1",
+      term: "Echo",
+      aliases: [],
+      case_sensitive: true,
+      source: "manual",
+      language: "en"
+    });
+
+    repo.updateDictionaryTerm({
+      id: "term-1",
+      term: "Echo Dictation",
+      aliases: ["echo app"],
+      case_sensitive: false,
+      source: "manual",
+      language: "en"
+    });
+
+    expect(repo.listDictionaryTerms()[0]).toMatchObject({
+      id: "term-1",
+      term: "Echo Dictation",
+      aliases: ["echo app"],
+      case_sensitive: false
+    });
+  });
 });

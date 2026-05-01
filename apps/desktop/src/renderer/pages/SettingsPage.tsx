@@ -2,10 +2,12 @@ import type { EchoSettings } from "../../main/storage/settingsRepository";
 
 export function SettingsPage({
   settings,
-  onSave
+  onSave,
+  onRestoreDefaultShortcut
 }: {
   settings: EchoSettings;
   onSave: (settings: Partial<EchoSettings>) => void;
+  onRestoreDefaultShortcut: () => void;
 }) {
   return (
     <section className="page-stack settings-page">
@@ -17,9 +19,14 @@ export function SettingsPage({
       </header>
 
       <section className="settings-grid">
-        <label>
+        <label className="shortcut-row">
           Shortcut
-          <input value={settings.shortcut} onChange={(event) => onSave({ shortcut: event.target.value })} />
+          <span>
+            <input value={settings.shortcut} onChange={(event) => onSave({ shortcut: event.target.value })} />
+            <button type="button" className="secondary-button" onClick={onRestoreDefaultShortcut}>
+              Restore Default
+            </button>
+          </span>
         </label>
         <label>
           Microphone

@@ -58,4 +58,34 @@ describe("createRendererRecorderBridge", () => {
     });
     expect(sent).toEqual([{ channel: "echo:recorder-stop", payload: { sessionId: "session-1" } }]);
   });
+
+  it("stores audio locally when a recordings directory is configured", async () => {
+    const writes: Array<{ filename: string; audio: Buffer }> = [];
+    const ipc = createFakeIpc();
+    const bridge = createRendererRecorderBridge({
+      webContents: { send: () => undefined },
+      ipcMain: ipc,
+      recordingsDir: "/tmp/echo-recordings",
+      writeRecording: async (filename: string, audio: Buffer) => {
+        writes.push({ filename, audio });
+        return filename;
+      }
+    });
+
+    const stopped = bridge.stop("session-1");
+    await ipc.invoke("echo:recorder-stopped", {
+      sessionId: "session-1",
+      audio: new Uint8Array([4, 5, 6]).buffer,
+      audioFormat: "wav",
+      durationMs: 2000,
+      localPath: null
+    });
+
+    await expect(stopped).resolves.toMatchObject({
+      audio: Buffer.from([4, 5, 6]),
+      audioFormat: "wav",
+      localPath: "/tmp/echo-recordings/session-1.wav"
+    });
+    expect(writes).toEqual([{ filename: "/tmp/echo-recordings/session-1.wav", audio: Buffer.from([4, 5, 6]) }]);
+  });
 });

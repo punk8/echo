@@ -1,4 +1,5 @@
 import type { Database } from "better-sqlite3";
+import type { HistoryRetention } from "./settingsRepository";
 
 export interface HistoryRowInput {
   id: string;
@@ -56,6 +57,41 @@ export function createHistoryRepository(db: Database) {
 
     deleteHistoryRow(id: string) {
       db.prepare("DELETE FROM dictation_history WHERE id = ?").run(id);
+    },
+
+    clearHistory() {
+      db.prepare("DELETE FROM dictation_history").run();
+    },
+
+    pruneHistory(retention: HistoryRetention, now = new Date()) {
+      const cutoff = cutoffForRetention(retention, now);
+      if (cutoff === "none") {
+        return;
+      }
+      if (cutoff === "all") {
+        db.prepare("DELETE FROM dictation_history").run();
+        return;
+      }
+      db.prepare("DELETE FROM dictation_history WHERE created_at < ?").run(cutoff.toISOString());
     }
   };
+}
+
+function cutoffForRetention(retention: HistoryRetention, now: Date): Date | "all" | "none" {
+  switch (retention) {
+    case "never":
+      return "all";
+    case "24_hours":
+      return subtractMs(now, 24 * 60 * 60 * 1000);
+    case "1_week":
+      return subtractMs(now, 7 * 24 * 60 * 60 * 1000);
+    case "1_month":
+      return subtractMs(now, 30 * 24 * 60 * 60 * 1000);
+    case "forever":
+      return "none";
+  }
+}
+
+function subtractMs(value: Date, ms: number) {
+  return new Date(value.getTime() - ms);
 }

@@ -40,6 +40,25 @@ export function createDictionaryRepository(db: Database) {
       });
     },
 
+    updateDictionaryTerm(term: DictionaryTermInput) {
+      db.prepare(
+        `
+          UPDATE dictionary_terms
+          SET term = @term,
+              aliases_json = @aliases_json,
+              case_sensitive = @case_sensitive,
+              source = @source,
+              language = @language,
+              updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+          WHERE id = @id
+        `
+      ).run({
+        ...term,
+        aliases_json: JSON.stringify(term.aliases),
+        case_sensitive: term.case_sensitive ? 1 : 0
+      });
+    },
+
     listDictionaryTerms(): DictionaryTermRow[] {
       const rows = db.prepare("SELECT * FROM dictionary_terms ORDER BY term COLLATE NOCASE ASC").all() as DictionaryTermRecord[];
       return rows.map(mapRecord);

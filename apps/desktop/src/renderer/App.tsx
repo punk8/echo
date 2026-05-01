@@ -128,12 +128,24 @@ export function App() {
           onCopy={(text) => void navigator.clipboard.writeText(text)}
           onDelete={(id) => void deleteHistoryRow(id)}
           onRetry={() => void toggleDictation()}
+          onClear={() => void clearHistory()}
         />
       ) : null}
       {page === "dictionary" ? (
-        <DictionaryPage terms={dictionary} onAdd={(term) => void addDictionaryTerm(term)} onDelete={(id) => void deleteDictionaryTerm(id)} />
+        <DictionaryPage
+          terms={dictionary}
+          onAdd={(term, aliases) => void addDictionaryTerm(term, aliases)}
+          onUpdate={(item) => void updateDictionaryTerm(item)}
+          onDelete={(id) => void deleteDictionaryTerm(id)}
+        />
       ) : null}
-      {page === "settings" ? <SettingsPage settings={snapshot.settings} onSave={(settings) => void saveSettings(settings)} /> : null}
+      {page === "settings" ? (
+        <SettingsPage
+          settings={snapshot.settings}
+          onSave={(settings) => void saveSettings(settings)}
+          onRestoreDefaultShortcut={() => void saveSettings({ shortcut: "Alt+Space" })}
+        />
+      ) : null}
     </HubLayout>
   );
 
@@ -173,15 +185,20 @@ export function App() {
     setSnapshot((current) => ({ ...current, settings: next }));
   }
 
-  async function addDictionaryTerm(term: string) {
+  async function addDictionaryTerm(term: string, aliases: string[]) {
     await desktopApi.addDictionaryTerm({
       id: crypto.randomUUID(),
       term,
-      aliases: [],
+      aliases,
       case_sensitive: true,
       source: "manual",
       language: snapshot.settings.language
     });
+    setDictionary(await desktopApi.listDictionaryTerms());
+  }
+
+  async function updateDictionaryTerm(item: DictionaryTermRow) {
+    await desktopApi.updateDictionaryTerm(item);
     setDictionary(await desktopApi.listDictionaryTerms());
   }
 
@@ -193,6 +210,11 @@ export function App() {
   async function deleteHistoryRow(id: string) {
     await desktopApi.deleteHistoryRow(id);
     setHistory(await desktopApi.listHistory());
+  }
+
+  async function clearHistory() {
+    await desktopApi.clearHistory();
+    setHistory([]);
   }
 }
 

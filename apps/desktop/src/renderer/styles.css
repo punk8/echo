@@ -287,6 +287,22 @@ h2 {
   font-weight: 700;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.secondary-button {
+  min-height: 34px;
+  padding: 7px 11px;
+  border-radius: 7px;
+  color: #25313b;
+  background: #e5ecef;
+}
+
 input,
 select {
   min-height: 34px;
@@ -317,6 +333,13 @@ select {
 
 .toggle-row input {
   min-height: auto;
+}
+
+.shortcut-row span {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .error-banner,

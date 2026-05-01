@@ -7,7 +7,8 @@ export function HistoryPage({
   onRetentionChange,
   onCopy,
   onDelete,
-  onRetry
+  onRetry,
+  onClear
 }: {
   history: HistoryRow[];
   settings: EchoSettings;
@@ -15,6 +16,7 @@ export function HistoryPage({
   onCopy: (text: string) => void;
   onDelete: (id: string) => void;
   onRetry: (id: string) => void;
+  onClear: () => void;
 }) {
   return (
     <section className="page-stack">
@@ -23,16 +25,21 @@ export function HistoryPage({
           <p className="eyebrow">Review</p>
           <h1>History</h1>
         </div>
-        <label className="field-inline">
-          Retention
-          <select value={settings.historyRetention} onChange={(event) => onRetentionChange(event.target.value as HistoryRetention)}>
-            <option value="24_hours">24 hours</option>
-            <option value="1_week">1 week</option>
-            <option value="1_month">1 month</option>
-            <option value="forever">Forever</option>
-            <option value="never">Never</option>
-          </select>
-        </label>
+        <div className="header-actions">
+          <label className="field-inline">
+            Retention
+            <select value={settings.historyRetention} onChange={(event) => onRetentionChange(event.target.value as HistoryRetention)}>
+              <option value="24_hours">24 hours</option>
+              <option value="1_week">1 week</option>
+              <option value="1_month">1 month</option>
+              <option value="forever">Forever</option>
+              <option value="never">Never</option>
+            </select>
+          </label>
+          <button type="button" className="secondary-button" onClick={onClear}>
+            Clear All
+          </button>
+        </div>
       </header>
 
       <section className="table-section">

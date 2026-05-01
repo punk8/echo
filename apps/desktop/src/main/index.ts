@@ -8,11 +8,12 @@ import { getUserDataPath } from "./appPaths";
 import { registerIpcHandlers } from "./ipc";
 import { captureContext } from "./platform/context";
 import { pasteTextWithClipboardFallback } from "./platform/insertion";
-import { registerDictationShortcut } from "./platform/shortcut";
+import { DEFAULT_DICTATION_SHORTCUT, createDictationShortcutController } from "./platform/shortcut";
 import { openEchoDatabase } from "./storage/database";
 import { createDictionaryRepository } from "./storage/dictionaryRepository";
 import { createHistoryRepository } from "./storage/historyRepository";
 import { createSettingsRepository } from "./storage/settingsRepository";
+import { resolvePreloadPath, resolveRendererIndexPath } from "./windowPaths";
 
 let hubWindow: BrowserWindow | undefined;
 let overlayWindow: BrowserWindow | undefined;
@@ -42,7 +43,11 @@ if (!gotLock) {
     const history = createHistoryRepository(db);
     const settings = createSettingsRepository(db);
     const dictionary = createDictionaryRepository(db);
-    const recorder = createRendererRecorderBridge({ webContents: hubWindow.webContents, ipcMain });
+    const recorder = createRendererRecorderBridge({
+      webContents: hubWindow.webContents,
+      ipcMain,
+      recordingsDir: getUserDataPath(app.getPath("userData"), "recordings")
+    });
     const overlay = overlayWindow;
     const controller = createDictationSessionController({
       createSessionId: randomUUID,
@@ -73,6 +78,13 @@ if (!gotLock) {
       repositories: { history, settings, dictionary }
     });
 
+    const shortcutController = createDictationShortcutController({
+      initialAccelerator: settings.getSettings().shortcut,
+      onToggle: () => {
+        hubWindow?.webContents.send("echo:shortcut-toggle");
+      }
+    });
+
     registerIpcHandlers({
       windows,
       repositories: { history, settings, dictionary },
@@ -80,16 +92,16 @@ if (!gotLock) {
         captureContext,
         insertText: pasteTextWithClipboardFallback
       },
-      dictation: controller
-    });
-
-    const shortcut = settings.getSettings().shortcut;
-    const shortcutResult = registerDictationShortcut({
-      accelerator: shortcut,
-      onToggle: () => {
-        hubWindow?.webContents.send("echo:shortcut-toggle");
+      dictation: controller,
+      onSettingsSaved: (nextSettings) => {
+        const shortcutResult = shortcutController.replaceShortcut(nextSettings.shortcut || DEFAULT_DICTATION_SHORTCUT);
+        if (!shortcutResult.registered) {
+          hubWindow?.webContents.send("echo:shortcut-error", shortcutResult);
+        }
       }
     });
+
+    const shortcutResult = shortcutController.registerInitial();
 
     if (!shortcutResult.registered) {
       hubWindow.webContents.once("did-finish-load", () => {
@@ -125,7 +137,7 @@ function getApiBaseUrl() {
 }
 
 function createWindows() {
-  const preloadPath = path.join(__dirname, "../preload/index.js");
+  const preloadPath = resolvePreloadPath(__dirname);
 
   const hub = new BrowserWindow({
     width: 980,
@@ -170,8 +182,9 @@ function createWindows() {
     void hub.loadURL(process.env.ELECTRON_RENDERER_URL);
     void overlay.loadURL(`${process.env.ELECTRON_RENDERER_URL}#/overlay`);
   } else {
-    void hub.loadFile(path.join(__dirname, "../renderer/index.html"));
-    void overlay.loadFile(path.join(__dirname, "../renderer/index.html"), { hash: "overlay" });
+    const rendererPath = resolveRendererIndexPath(__dirname);
+    void hub.loadFile(rendererPath);
+    void overlay.loadFile(rendererPath, { hash: "overlay" });
   }
 
   return { hubWindow: hub, overlayWindow: overlay };
