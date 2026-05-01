@@ -367,6 +367,7 @@ Tables:
 - `timing_json`
 
 Local audio retention follows the same setting as history unless the user disables recording retention.
+Changing the history retention setting immediately prunes local history and retained recordings according to the new setting, including deleting all retained rows and audio when retention is set to `never`.
 
 ## 12. Permissions and Privacy
 

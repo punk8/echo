@@ -37,6 +37,71 @@ describe("history IPC cleanup helpers", () => {
 });
 
 describe("registerIpcHandlers", () => {
+  it("prunes history and recordings when retention settings change", async () => {
+    vi.mocked(ipcMain.handle).mockClear();
+    const deleteLocalRecording = vi.fn().mockResolvedValue(undefined);
+    const history = {
+      listHistory: vi.fn(),
+      deleteHistoryRow: vi.fn(),
+      clearHistory: vi.fn(),
+      pruneHistory: vi.fn(() => ["/tmp/session-1.webm"])
+    };
+    const settings = {
+      getSettings: vi.fn(() => ({
+        historyRetention: "never",
+        shortcut: "Alt+Space",
+        language: "auto",
+        microphoneDeviceId: "system",
+        interactionSounds: true,
+        muteOtherAudioWhileDictating: false,
+        launchAtLogin: false,
+        showDockIcon: true,
+        outputStyle: "balanced"
+      })),
+      saveSettings: vi.fn()
+    };
+
+    registerIpcHandlers({
+      windows: { hubWindow: {} as never, overlayWindow: {} as never },
+      repositories: {
+        history: history as never,
+        settings: settings as never,
+        dictionary: {
+          listDictionaryTerms: vi.fn(),
+          addDictionaryTerm: vi.fn(),
+          updateDictionaryTerm: vi.fn(),
+          deleteDictionaryTerm: vi.fn()
+        } as never
+      },
+      platform: {
+        captureContext: vi.fn(),
+        insertText: vi.fn(),
+        getPermissionStatus: vi.fn(),
+        requestMicrophonePermission: vi.fn(),
+        requestAccessibilityPermission: vi.fn(),
+        deleteLocalRecording
+      } as never,
+      dictation: {
+        getAppState: vi.fn(),
+        startDictation: vi.fn(),
+        stopDictation: vi.fn(),
+        cancelDictation: vi.fn(),
+        retryHistoryRow: vi.fn(),
+        getProviderStatus: vi.fn()
+      }
+    });
+
+    const saveSettingsHandler = vi
+      .mocked(ipcMain.handle)
+      .mock.calls.find(([channel]) => channel === "echo:save-settings")?.[1];
+
+    await saveSettingsHandler?.({} as never, { historyRetention: "never" });
+
+    expect(settings.saveSettings).toHaveBeenCalledWith({ historyRetention: "never" });
+    expect(history.pruneHistory).toHaveBeenCalledWith("never");
+    expect(deleteLocalRecording).toHaveBeenCalledWith("/tmp/session-1.webm");
+  });
+
   it("exposes retained-recording history retry through IPC", () => {
     const retryHistoryRow = vi.fn();
 

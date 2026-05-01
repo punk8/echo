@@ -87,9 +87,18 @@ export function registerIpcHandlers(deps: RegisterIpcHandlersDeps) {
   });
 
   ipcMain.handle("echo:get-settings", () => deps.repositories.settings.getSettings());
-  ipcMain.handle("echo:save-settings", (_event, settings: Partial<EchoSettings>) => {
+  ipcMain.handle("echo:save-settings", async (_event, settings: Partial<EchoSettings>) => {
     deps.repositories.settings.saveSettings(settings);
     const next = deps.repositories.settings.getSettings();
+    if (settings.historyRetention) {
+      await pruneHistoryWithAudioCleanup(
+        {
+          history: deps.repositories.history,
+          deleteLocalRecording: deps.platform.deleteLocalRecording
+        },
+        settings.historyRetention
+      );
+    }
     deps.onSettingsSaved?.(next);
     return next;
   });
@@ -117,6 +126,16 @@ export async function clearHistoryWithAudioCleanup(deps: {
   deleteLocalRecording: (localPath: string) => Promise<void>;
 }) {
   await deleteLocalRecordings(deps.history.clearHistory(), deps.deleteLocalRecording);
+}
+
+export async function pruneHistoryWithAudioCleanup(
+  deps: {
+    history: { pruneHistory: (retention: EchoSettings["historyRetention"]) => string[] };
+    deleteLocalRecording: (localPath: string) => Promise<void>;
+  },
+  retention: EchoSettings["historyRetention"]
+) {
+  await deleteLocalRecordings(deps.history.pruneHistory(retention), deps.deleteLocalRecording);
 }
 
 async function deleteLocalRecordings(
