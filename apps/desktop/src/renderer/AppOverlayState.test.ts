@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildOverlayState, isOverlayRouteHash, saveSettingsAndRefreshHistory } from "./App";
+import { buildOverlayState, cancelDictationAndRefreshHistory, isOverlayRouteHash, saveSettingsAndRefreshHistory } from "./App";
 
 describe("buildOverlayState", () => {
   it("recognizes packaged overlay window hashes", () => {
@@ -214,5 +214,31 @@ describe("saveSettingsAndRefreshHistory", () => {
     expect(saveSettings).toHaveBeenCalledWith({ historyRetention: "never" });
     expect(listHistory).toHaveBeenCalledOnce();
     expect(setHistory).toHaveBeenCalledWith([]);
+  });
+});
+
+describe("cancelDictationAndRefreshHistory", () => {
+  it("refreshes visible history after cancellation writes a cancelled row", async () => {
+    const cancelledSnapshot = {
+      state: { status: "cancelled" as const, sessionId: "session-1" },
+      settings: { historyRetention: "1_week" }
+    };
+    const rows = [{ id: "session-1", status: "cancelled" }];
+    const setSnapshot = vi.fn();
+    const setHistory = vi.fn();
+    const cancelDictation = vi.fn().mockResolvedValue(cancelledSnapshot);
+    const listHistory = vi.fn().mockResolvedValue(rows);
+
+    await cancelDictationAndRefreshHistory({
+      cancelDictation,
+      listHistory,
+      setSnapshot,
+      setHistory
+    });
+
+    expect(cancelDictation).toHaveBeenCalledOnce();
+    expect(setSnapshot).toHaveBeenCalledWith(cancelledSnapshot);
+    expect(listHistory).toHaveBeenCalledOnce();
+    expect(setHistory).toHaveBeenCalledWith(rows);
   });
 });

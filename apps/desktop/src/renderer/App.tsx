@@ -229,8 +229,12 @@ export function App() {
   }
 
   async function cancelDictation() {
-    const next = await desktopApi.cancelDictation();
-    setSnapshot(next);
+    await cancelDictationAndRefreshHistory({
+      cancelDictation: desktopApi.cancelDictation,
+      listHistory: desktopApi.listHistory,
+      setSnapshot,
+      setHistory
+    });
   }
 
   async function dismissOverlay() {
@@ -337,6 +341,18 @@ export async function saveSettingsAndRefreshHistory(input: {
   if (Object.prototype.hasOwnProperty.call(input.settings, "historyRetention")) {
     input.setHistory(await input.listHistory());
   }
+  return next;
+}
+
+export async function cancelDictationAndRefreshHistory(input: {
+  cancelDictation: () => Promise<AppStateSnapshot>;
+  listHistory: () => Promise<HistoryRow[]>;
+  setSnapshot: Dispatch<SetStateAction<AppStateSnapshot>>;
+  setHistory: Dispatch<SetStateAction<HistoryRow[]>>;
+}) {
+  const next = await input.cancelDictation();
+  input.setSnapshot(next);
+  input.setHistory(await input.listHistory());
   return next;
 }
 
