@@ -66,6 +66,10 @@ function createDeps() {
       insertText: vi.fn().mockResolvedValue({ method: "clipboard_paste" as const, status: "inserted" as const }),
       copyText: vi.fn().mockResolvedValue({ method: "clipboard" as const, status: "copied" as const }),
       playInteractionSound: vi.fn(),
+      audioDucker: {
+        duck: vi.fn().mockResolvedValue(undefined),
+        restore: vi.fn().mockResolvedValue(undefined)
+      },
       readLocalRecording: vi.fn().mockResolvedValue(Buffer.from("retry-audio")),
       deleteLocalRecording: vi.fn().mockResolvedValue(undefined),
       overlay: {
@@ -292,6 +296,54 @@ describe("createDictationSessionController", () => {
 
     expect(deps.playInteractionSound).toHaveBeenCalledWith("start");
     expect(deps.playInteractionSound).toHaveBeenCalledWith("complete");
+  });
+
+  it("mutes other audio while recording when the setting is enabled", async () => {
+    const { deps } = createDeps();
+    deps.repositories.settings.getSettings.mockReturnValue({
+      ...defaultSettings,
+      muteOtherAudioWhileDictating: true
+    });
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+    await controller.stopDictation();
+
+    expect(deps.audioDucker.duck.mock.invocationCallOrder[0]).toBeLessThan(
+      deps.recorder.start.mock.invocationCallOrder[0] ?? 0
+    );
+    expect(deps.audioDucker.restore.mock.invocationCallOrder[0]).toBeGreaterThan(
+      deps.recorder.stop.mock.invocationCallOrder[0] ?? Number.MAX_SAFE_INTEGER
+    );
+  });
+
+  it("restores other audio when recording start fails after muting", async () => {
+    const { deps } = createDeps();
+    deps.repositories.settings.getSettings.mockReturnValue({
+      ...defaultSettings,
+      muteOtherAudioWhileDictating: true
+    });
+    deps.recorder.start.mockRejectedValueOnce(new Error("audio.device_unavailable"));
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+
+    expect(deps.audioDucker.duck).toHaveBeenCalled();
+    expect(deps.audioDucker.restore).toHaveBeenCalled();
+  });
+
+  it("restores other audio when recording is cancelled", async () => {
+    const { deps } = createDeps();
+    deps.repositories.settings.getSettings.mockReturnValue({
+      ...defaultSettings,
+      muteOtherAudioWhileDictating: true
+    });
+    const controller = createDictationSessionController(deps);
+
+    await controller.startDictation();
+    await controller.cancelDictation();
+
+    expect(deps.audioDucker.restore).toHaveBeenCalled();
   });
 
   it("does not play interaction sounds when the setting is disabled", async () => {

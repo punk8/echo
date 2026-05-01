@@ -13,6 +13,7 @@ import type { PermissionStatusSnapshot } from "../platform/permissions";
 import type { DictionaryTermRow } from "../storage/dictionaryRepository";
 import type { HistoryRow, HistoryRowInput } from "../storage/historyRepository";
 import type { EchoSettings } from "../storage/settingsRepository";
+import type { AudioDucker } from "../platform/audioDucking";
 
 export interface RecordedAudio {
   audio: Buffer;
@@ -38,6 +39,7 @@ export interface DictationSessionControllerDeps {
   insertText: (text: string) => Promise<InsertionResult>;
   copyText: (text: string) => Promise<InsertionResult>;
   playInteractionSound?: (event: InteractionSoundEvent) => void;
+  audioDucker?: AudioDucker;
   readLocalRecording: (localPath: string) => Promise<Buffer>;
   deleteLocalRecording: (localPath: string) => Promise<void>;
   overlay: {
@@ -76,6 +78,7 @@ interface CurrentSession {
   sessionId: string;
   context: DictationContext;
   startedAt: string;
+  audioDucked: boolean;
 }
 
 export function createDictationSessionController(deps: DictationSessionControllerDeps) {
@@ -157,10 +160,14 @@ export function createDictationSessionController(deps: DictationSessionControlle
       return getAppState();
     }
 
+    const settings = deps.repositories.settings.getSettings();
+    const audioDucked = await maybeDuckOtherAudio(settings);
+
     currentSession = {
       sessionId,
       context,
-      startedAt: deps.now()
+      startedAt: deps.now(),
+      audioDucked
     };
 
     try {
@@ -174,6 +181,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
         message: recorderError.message
       };
       currentSession = undefined;
+      await maybeRestoreOtherAudio({ audioDucked });
       deps.overlay.showError({ sessionId, code: recorderError.code, message: recorderError.message });
       return getAppState();
     }
@@ -195,6 +203,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
       recording = await deps.recorder.stop(session.sessionId);
     } catch (error) {
       const recorderError = normalizeRecorderStopError(error);
+      await maybeRestoreOtherAudio(session);
       state = {
         status: "error",
         sessionId: session.sessionId,
@@ -205,6 +214,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
       deps.overlay.showError({ sessionId: session.sessionId, code: recorderError.code, message: recorderError.message });
       return getAppState();
     }
+    await maybeRestoreOtherAudio(session);
 
     state = applyDictationEvent(state, { type: "processing_started" });
     deps.overlay.showProcessing({ sessionId: session.sessionId });
@@ -260,7 +270,11 @@ export function createDictationSessionController(deps: DictationSessionControlle
   async function cancelDictation() {
     const session = requireCurrentSession();
     state = applyDictationEvent(state, { type: "cancel" });
-    await deps.recorder.cancel(session.sessionId);
+    try {
+      await deps.recorder.cancel(session.sessionId);
+    } finally {
+      await maybeRestoreOtherAudio(session);
+    }
     deps.overlay.hide();
     currentSession = undefined;
     return getAppState();
@@ -299,7 +313,8 @@ export function createDictationSessionController(deps: DictationSessionControlle
     const session: CurrentSession = {
       sessionId,
       context,
-      startedAt: deps.now()
+      startedAt: deps.now(),
+      audioDucked: false
     };
 
     state = { status: "processing", sessionId };
@@ -349,6 +364,32 @@ export function createDictationSessionController(deps: DictationSessionControlle
   function maybePlayInteractionSound(event: InteractionSoundEvent) {
     if (deps.repositories.settings.getSettings().interactionSounds) {
       deps.playInteractionSound?.(event);
+    }
+  }
+
+  async function maybeDuckOtherAudio(settings: EchoSettings) {
+    if (!settings.muteOtherAudioWhileDictating || !deps.audioDucker) {
+      return false;
+    }
+
+    try {
+      await deps.audioDucker.duck();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async function maybeRestoreOtherAudio(session: Pick<CurrentSession, "audioDucked">) {
+    if (!session.audioDucked || !deps.audioDucker) {
+      return;
+    }
+
+    try {
+      await deps.audioDucker.restore();
+      session.audioDucked = false;
+    } catch {
+      // Audio ducking is best-effort; recording recovery should not block dictation flow.
     }
   }
 

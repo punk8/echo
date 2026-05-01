@@ -9,6 +9,7 @@ import { createDictationSessionController } from "./dictation/sessionController"
 import { getUserDataPath } from "./appPaths";
 import { registerIpcHandlers } from "./ipc";
 import { applyAppBehaviorSettings } from "./platform/appBehavior";
+import { createSystemAudioDucker } from "./platform/audioDucking";
 import { captureContext } from "./platform/context";
 import { copyTextToClipboard, insertTextWithAccessibilityFallback } from "./platform/insertion";
 import {
@@ -26,6 +27,7 @@ import { resolvePreloadPath, resolveRendererIndexPath } from "./windowPaths";
 let hubWindow: BrowserWindow | undefined;
 let overlayWindow: BrowserWindow | undefined;
 let apiRuntime: LocalApiRuntime | undefined;
+let audioDucker: ReturnType<typeof createSystemAudioDucker> | undefined;
 
 const gotLock = app.requestSingleInstanceLock();
 
@@ -54,6 +56,7 @@ if (!gotLock) {
     const history = createHistoryRepository(db);
     const settings = createSettingsRepository(db);
     const dictionary = createDictionaryRepository(db);
+    audioDucker = createSystemAudioDucker();
     applyAppBehaviorSettings(settings.getSettings(), {
       getLoginItemSettings: () => app.getLoginItemSettings(),
       setLoginItemSettings: (options) => app.setLoginItemSettings(options),
@@ -76,6 +79,7 @@ if (!gotLock) {
       insertText: insertTextWithAccessibilityFallback,
       copyText: copyTextToClipboard,
       playInteractionSound: () => shell.beep(),
+      audioDucker,
       readLocalRecording: readFile,
       deleteLocalRecording: (localPath) => rm(localPath, { force: true }),
       overlay: {
@@ -184,6 +188,7 @@ if (!gotLock) {
   });
 
   app.on("before-quit", () => {
+    void audioDucker?.restore();
     apiRuntime?.stop();
     apiRuntime = undefined;
   });

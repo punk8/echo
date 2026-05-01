@@ -318,6 +318,7 @@ Settings:
 - Provider configuration status.
 - Language preference.
 - Audio behavior.
+- When "Mute other audio" is enabled, the macOS app records the current system output volume/mute state before recording starts, mutes system output while microphone recording is active, and restores the captured state when recording stops, is cancelled, or fails to start. This first slice does not implement per-app audio ducking; a future native helper can replace the system-output fallback.
 - Interaction sounds provide lightweight start, completion, and error feedback when enabled, and stay silent when disabled.
 - Launch and Dock behavior.
 - History retention.
