@@ -1,6 +1,6 @@
 # Echo Real-Provider Mac Dictation App Spec
 
-Status: Draft for review
+Status: Approved for implementation
 Date: 2026-05-02
 Scope: First complete macOS dictation application slice using Electron and real ASR/LLM providers only.
 
