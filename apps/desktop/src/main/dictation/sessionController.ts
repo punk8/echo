@@ -84,6 +84,19 @@ export function createDictationSessionController(deps: DictationSessionControlle
     const sessionId = deps.createSessionId();
     const context = await deps.captureContext();
 
+    if (!context.writable) {
+      const code = "target.no_writable_field";
+      const message = "Focus a writable text field before starting dictation.";
+      state = {
+        status: "error",
+        sessionId,
+        code,
+        message
+      };
+      deps.overlay.showError({ sessionId, code, message });
+      return getAppState();
+    }
+
     currentSession = {
       sessionId,
       context,

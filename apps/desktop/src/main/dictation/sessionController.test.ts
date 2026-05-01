@@ -107,6 +107,27 @@ describe("createDictationSessionController", () => {
     expect(snapshot.state).toEqual({ status: "recording", sessionId: "session-1" });
   });
 
+  it("does not start recording when the focused target is not writable", async () => {
+    const { deps } = createDeps();
+    deps.captureContext.mockResolvedValueOnce({ ...context, writable: false });
+    const controller = createDictationSessionController(deps);
+
+    const snapshot = await controller.startDictation();
+
+    expect(deps.recorder.start).not.toHaveBeenCalled();
+    expect(deps.overlay.showError).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      code: "target.no_writable_field",
+      message: "Focus a writable text field before starting dictation."
+    });
+    expect(snapshot.state).toEqual({
+      status: "error",
+      sessionId: "session-1",
+      code: "target.no_writable_field",
+      message: "Focus a writable text field before starting dictation."
+    });
+  });
+
   it("stopping from recording processes audio, inserts refined text, and writes history", async () => {
     const { deps, historyRows } = createDeps();
     const controller = createDictationSessionController(deps);
