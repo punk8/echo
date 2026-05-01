@@ -225,7 +225,7 @@ Required context:
 - Active app name.
 - Whether there is a writable focused text field.
 - Current insertion target availability.
-- Current selection state only to avoid accidental replacement.
+- Selection state at recording start and insertion time only to avoid accidental replacement.
 
 Optional context:
 

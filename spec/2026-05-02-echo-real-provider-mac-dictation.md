@@ -427,7 +427,7 @@ Recovery requirements:
 - ASR/refinement failures allow retry.
 - Error-overlay Retry must reprocess the retained failed recording when local history/recording retention is enabled, instead of starting a new recording under the same failed-session label.
 - Insertion failures copy the refined text to clipboard when available.
-- If the current target has selected text at insertion time, Echo must avoid direct insertion and use the copy fallback to prevent accidental replacement.
+- If the target has selected text at recording start or insertion time, Echo must avoid direct insertion and use the copy fallback to prevent accidental replacement.
 - Direct Accessibility insertion should normalize simple word-boundary spacing around the inserted text, while avoiding extra spaces around punctuation and existing whitespace.
 - Automatic clipboard-based paste should treat the clipboard as temporary transport: after a successful paste, Echo restores the user's previous clipboard text. If paste fails, Echo intentionally leaves the refined text on the clipboard and shows the manual paste fallback state.
 
