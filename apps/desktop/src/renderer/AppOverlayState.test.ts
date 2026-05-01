@@ -31,9 +31,36 @@ describe("buildOverlayState", () => {
     }
 
     expect(overlayState.recoverableText).toBe("raw transcript");
+    if (!overlayState.onCopy) {
+      throw new Error("expected copy action for recoverable text");
+    }
     overlayState.onCopy();
 
     expect(writeClipboard).toHaveBeenCalledWith("raw transcript");
+  });
+
+  it("does not expose copy on overlay errors without recoverable text", () => {
+    const writeClipboard = vi.fn();
+    const overlayState = buildOverlayState(
+      { status: "error", code: "server.refine_failed", message: "Dictation refinement failed." },
+      {
+        status: "error",
+        sessionId: "session-1",
+        message: "Dictation refinement failed."
+      },
+      [],
+      0,
+      vi.fn(),
+      vi.fn(),
+      null,
+      writeClipboard
+    );
+
+    if (overlayState.status !== "error") {
+      throw new Error("expected error overlay state");
+    }
+
+    expect(overlayState.onCopy).toBeUndefined();
   });
 
   it("dismisses overlay errors without cancelling an already-ended recording session", () => {

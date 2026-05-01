@@ -374,7 +374,6 @@ export function buildOverlayState(
       status: "error",
       message: error,
       onRetry: onFinish,
-      onCopy: () => void writeClipboard(error),
       onDismiss
     };
   }
@@ -408,13 +407,13 @@ export function buildOverlayState(
   }
   if (overlayPayload?.status === "error") {
     const message = overlayPayload.message ?? "Dictation failed.";
-    const copyText = overlayPayload.recoverableText ?? message;
     const retryHistoryId = overlayPayload.retryHistoryId;
     const recoveryActionLabel = permissionRecoveryActionLabel(overlayPayload.code);
     return {
       status: "error",
       message,
       ...(overlayPayload.recoverableText ? { recoverableText: overlayPayload.recoverableText } : {}),
+      ...(overlayPayload.recoverableText ? { onCopy: () => void writeClipboard(overlayPayload.recoverableText as string) } : {}),
       ...(recoveryActionLabel && overlayPayload.code
         ? {
             recoveryActionLabel,
@@ -422,7 +421,6 @@ export function buildOverlayState(
           }
         : {}),
       onRetry: retryHistoryId ? () => void onRetryHistory(retryHistoryId) : onFinish,
-      onCopy: () => void writeClipboard(copyText),
       onDismiss
     };
   }
@@ -450,7 +448,6 @@ export function buildOverlayState(
           }
         : {}),
       onRetry: onFinish,
-      onCopy: () => void writeClipboard(state.message),
       onDismiss
     };
   }

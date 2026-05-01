@@ -18,7 +18,7 @@ export type OverlayState =
       recoveryActionLabel?: string;
       onRecoveryAction?: () => void;
       onRetry: () => void;
-      onCopy: () => void;
+      onCopy?: () => void;
       onDismiss: () => void;
     };
 
@@ -83,9 +83,11 @@ export function Overlay({ state }: { state: OverlayState }) {
             <button type="button" className="ghost-button" onClick={state.onRetry}>
               Retry
             </button>
-            <button type="button" className="ghost-button" onClick={state.onCopy}>
-              Copy
-            </button>
+            {state.onCopy ? (
+              <button type="button" className="ghost-button" onClick={state.onCopy}>
+                Copy
+              </button>
+            ) : null}
             <button type="button" className="primary-button" onClick={state.onDismiss}>
               Dismiss
             </button>

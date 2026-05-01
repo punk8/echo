@@ -338,7 +338,7 @@ Required states:
 - `processing`: explicit label, activity indicator, provider stage text.
 - `inserting`: brief insertion label.
 - `complete`: short confirmation.
-- `error`: clear message with Retry, Copy, and Dismiss actions.
+- `error`: clear message with Retry and Dismiss actions; Copy appears only when recoverable text exists.
 
 The overlay must make recording and processing visually distinct. Typeless-like waiting dots are acceptable only with text labels.
 

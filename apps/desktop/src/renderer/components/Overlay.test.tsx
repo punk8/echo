@@ -44,21 +44,20 @@ describe("Overlay", () => {
     expect(markup).toContain("Command+V");
   });
 
-  it("shows Retry, Copy, and Dismiss actions on error", () => {
+  it("shows Retry and Dismiss actions on error without recoverable text", () => {
     const markup = renderToStaticMarkup(
       <Overlay
         state={{
           status: "error",
           message: "Speech recognition failed.",
           onRetry: vi.fn(),
-          onCopy: vi.fn(),
           onDismiss: vi.fn()
         }}
       />
     );
 
     expect(markup).toContain("Retry");
-    expect(markup).toContain("Copy");
+    expect(markup).not.toContain("Copy");
     expect(markup).toContain("Dismiss");
   });
 
@@ -71,7 +70,6 @@ describe("Overlay", () => {
           recoveryActionLabel: "Open Accessibility Settings",
           onRecoveryAction: vi.fn(),
           onRetry: vi.fn(),
-          onCopy: vi.fn(),
           onDismiss: vi.fn()
         }}
       />
