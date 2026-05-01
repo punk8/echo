@@ -22,7 +22,7 @@ import { openEchoDatabase } from "./storage/database";
 import { createDictionaryRepository } from "./storage/dictionaryRepository";
 import { createHistoryRepository } from "./storage/historyRepository";
 import { createSettingsRepository } from "./storage/settingsRepository";
-import { computeBottomOverlayBounds } from "./windowPlacement";
+import { createOverlayPresenter } from "./overlayPresenter";
 import { resolvePreloadPath, resolveRendererIndexPath } from "./windowPaths";
 
 let hubWindow: BrowserWindow | undefined;
@@ -69,14 +69,10 @@ if (!gotLock) {
       recordingsDir: getUserDataPath(app.getPath("userData"), "recordings")
     });
     const overlay = overlayWindow;
-    const showOverlay = (payload: Record<string, unknown>, autoHideMs?: number) => {
-      positionOverlayWindow(overlay);
-      overlay.showInactive();
-      overlay.webContents.send("echo:overlay-state", payload);
-      if (autoHideMs) {
-        setTimeout(() => overlay.hide(), autoHideMs);
-      }
-    };
+    const overlayPresenter = createOverlayPresenter({
+      overlay,
+      getDisplayWorkArea: () => screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea
+    });
     const controller = createDictationSessionController({
       createSessionId: randomUUID,
       now: () => new Date().toISOString(),
@@ -93,22 +89,22 @@ if (!gotLock) {
       deleteLocalRecording: (localPath) => rm(localPath, { force: true }),
       overlay: {
         showRecording: ({ sessionId }) => {
-          showOverlay({ status: "recording", sessionId });
+          overlayPresenter.show({ status: "recording", sessionId });
         },
         showFinalizing: ({ sessionId }) => {
-          showOverlay({ status: "finalizing", sessionId });
+          overlayPresenter.show({ status: "finalizing", sessionId });
         },
         showProcessing: ({ sessionId }) => {
-          showOverlay({ status: "processing", sessionId });
+          overlayPresenter.show({ status: "processing", sessionId });
         },
         showInserting: ({ sessionId }) => {
-          showOverlay({ status: "inserting", sessionId });
+          overlayPresenter.show({ status: "inserting", sessionId });
         },
         showCopied: ({ sessionId }) => {
-          showOverlay({ status: "copied", sessionId }, 3000);
+          overlayPresenter.show({ status: "copied", sessionId }, 3000);
         },
         showError: ({ sessionId, code, message, recoverableText, retryHistoryId }) => {
-          showOverlay({
+          overlayPresenter.show({
             status: "error",
             sessionId,
             code,
@@ -118,9 +114,9 @@ if (!gotLock) {
           });
         },
         showComplete: ({ sessionId }) => {
-          showOverlay({ status: "complete", sessionId }, 1200);
+          overlayPresenter.show({ status: "complete", sessionId }, 1200);
         },
-        hide: () => overlay.hide()
+        hide: () => overlayPresenter.hide()
       },
       repositories: { history, settings, dictionary }
     });
@@ -247,15 +243,4 @@ function createWindows() {
   }
 
   return { hubWindow: hub, overlayWindow: overlay };
-}
-
-function positionOverlayWindow(overlay: BrowserWindow) {
-  const cursorPoint = screen.getCursorScreenPoint();
-  const display = screen.getDisplayNearestPoint(cursorPoint);
-  overlay.setBounds(
-    computeBottomOverlayBounds({
-      displayWorkArea: display.workArea,
-      overlaySize: overlay.getBounds()
-    })
-  );
 }
