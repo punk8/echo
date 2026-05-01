@@ -301,6 +301,7 @@ History:
 - Show local retention control at the top.
 - Show dictation rows only for this slice.
 - Include copied text, row status, insertion status, app name, duration, timestamp, retry, copy, and delete actions.
+- Copy is enabled only when the row has refined text or raw transcript text; cancelled or failed rows with no transcript must not copy an empty string.
 - Retry is available only for failed or cancelled rows that still have a retained local recording.
 - Retrying a retained recording reprocesses the same audio and copies the new refined text to the clipboard instead of automatically inserting into the original app. This avoids duplicate or stale-target insertion.
 - Rows without a retained local recording must show retry as unavailable rather than starting a new recording under the same label.

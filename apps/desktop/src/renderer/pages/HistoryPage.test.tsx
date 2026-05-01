@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { canRetryHistoryRow, HistoryPage } from "./HistoryPage";
+import { canCopyHistoryRow, canRetryHistoryRow, HistoryPage } from "./HistoryPage";
 
 describe("HistoryPage", () => {
   it("offers a clear all action for local history", () => {
@@ -188,6 +188,42 @@ describe("HistoryPage", () => {
     expect(canRetryHistoryRow(retryable)).toBe(true);
     expect(canRetryHistoryRow(completed)).toBe(false);
     expect(canRetryHistoryRow({ ...retryable, audio_local_path: null })).toBe(false);
+  });
+
+  it("only enables copying when a row has transcript text", () => {
+    const completed = createHistoryRow("completed-1");
+    const cancelled = {
+      ...createHistoryRow("cancelled-1"),
+      status: "cancelled",
+      raw_text: "",
+      refined_text: "",
+      error_code: "dictation.cancelled"
+    };
+    const markup = renderToStaticMarkup(
+      <HistoryPage
+        history={[cancelled]}
+        settings={{
+          historyRetention: "1_week",
+          shortcut: "Alt+Space",
+          language: "auto",
+          microphoneDeviceId: "system",
+          interactionSounds: true,
+          muteOtherAudioWhileDictating: false,
+          launchAtLogin: false,
+          showDockIcon: true,
+          outputStyle: "balanced"
+        }}
+        onRetentionChange={vi.fn()}
+        onCopy={vi.fn()}
+        onDelete={vi.fn()}
+        onRetry={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
+
+    expect(canCopyHistoryRow(completed)).toBe(true);
+    expect(canCopyHistoryRow(cancelled)).toBe(false);
+    expect(markup).toContain("Copy unavailable without transcript text");
   });
 });
 

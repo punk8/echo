@@ -79,7 +79,12 @@ export function HistoryPage({
                 >
                   Retry
                 </button>
-                <button type="button" onClick={() => onCopy(row.refined_text || row.raw_text)}>
+                <button
+                  type="button"
+                  disabled={!canCopyHistoryRow(row)}
+                  title={canCopyHistoryRow(row) ? "Copy transcript text" : "Copy unavailable without transcript text"}
+                  onClick={() => onCopy(historyCopyText(row))}
+                >
                   Copy
                 </button>
                 <button type="button" onClick={() => onDelete(row.id)}>
@@ -96,6 +101,14 @@ export function HistoryPage({
 
 export function canRetryHistoryRow(row: HistoryRow) {
   return (row.status === "error" || row.status === "cancelled") && Boolean(row.audio_local_path);
+}
+
+export function canCopyHistoryRow(row: HistoryRow) {
+  return historyCopyText(row).length > 0;
+}
+
+function historyCopyText(row: HistoryRow) {
+  return row.refined_text || row.raw_text;
 }
 
 function formatDate(value: string) {
