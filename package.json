@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@10.13.1",
   "scripts": {
-    "dev": "pnpm --parallel dev",
+    "dev": "pnpm --parallel --filter @echo/api --filter @echo/desktop dev",
     "dev:api": "pnpm --filter @echo/api dev",
     "dev:desktop": "pnpm --filter @echo/desktop dev",
     "build": "pnpm --recursive build",
