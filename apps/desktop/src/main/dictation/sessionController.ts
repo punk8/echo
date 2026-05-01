@@ -23,6 +23,7 @@ export interface RecordedAudio {
 }
 
 export type InteractionSoundEvent = "start" | "complete" | "error";
+const processingStageText = "Transcribing audio and refining text";
 
 export interface DictationSessionControllerDeps {
   createSessionId: () => string;
@@ -45,7 +46,7 @@ export interface DictationSessionControllerDeps {
   overlay: {
     showRecording: (input: { sessionId: string; context: DictationContext }) => void;
     showFinalizing: (input: { sessionId: string }) => void;
-    showProcessing: (input: { sessionId: string }) => void;
+    showProcessing: (input: { sessionId: string; stageText?: string }) => void;
     showInserting: (input: { sessionId: string }) => void;
     showCopied: (input: { sessionId: string }) => void;
     showError: (input: {
@@ -217,7 +218,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
     await maybeRestoreOtherAudio(session);
 
     state = applyDictationEvent(state, { type: "processing_started" });
-    deps.overlay.showProcessing({ sessionId: session.sessionId });
+    deps.overlay.showProcessing({ sessionId: session.sessionId, stageText: processingStageText });
 
     try {
       const settings = deps.repositories.settings.getSettings();
@@ -316,7 +317,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
     };
 
     state = { status: "processing", sessionId };
-    deps.overlay.showProcessing({ sessionId });
+    deps.overlay.showProcessing({ sessionId, stageText: processingStageText });
 
     try {
       const settings = deps.repositories.settings.getSettings();

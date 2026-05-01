@@ -94,8 +94,8 @@ if (!gotLock) {
         showFinalizing: ({ sessionId }) => {
           overlayPresenter.show({ status: "finalizing", sessionId });
         },
-        showProcessing: ({ sessionId }) => {
-          overlayPresenter.show({ status: "processing", sessionId });
+        showProcessing: ({ sessionId, stageText }) => {
+          overlayPresenter.show({ status: "processing", sessionId, stageText });
         },
         showInserting: ({ sessionId }) => {
           overlayPresenter.show({ status: "inserting", sessionId });

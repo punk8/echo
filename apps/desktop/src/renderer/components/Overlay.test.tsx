@@ -20,6 +20,15 @@ describe("Overlay", () => {
     expect(markup).toContain("Processing");
   });
 
+  it("shows provider stage text while processing", () => {
+    const markup = renderToStaticMarkup(
+      <Overlay state={{ status: "processing", stageText: "Transcribing audio and refining text" }} />
+    );
+
+    expect(markup).toContain("Processing");
+    expect(markup).toContain("Transcribing audio and refining text");
+  });
+
   it("shows finalizing state explicitly", () => {
     const markup = renderToStaticMarkup(<Overlay state={{ status: "finalizing" }} />);
 

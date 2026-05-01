@@ -274,6 +274,10 @@ describe("createDictationSessionController", () => {
 
     expect(deps.backend).toHaveBeenCalledWith(expect.objectContaining({ sessionId: "session-1", audioFormat: "webm" }));
     expect(deps.overlay.showFinalizing).toHaveBeenCalledWith({ sessionId: "session-1" });
+    expect(deps.overlay.showProcessing).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      stageText: "Transcribing audio and refining text"
+    });
     expect(deps.overlay.showInserting).toHaveBeenCalledWith({ sessionId: "session-1" });
     expect(deps.insertText).toHaveBeenCalledWith("Tomorrow at three.");
     expect(historyRows).toHaveLength(1);

@@ -376,7 +376,10 @@ export function buildOverlayState(
     };
   }
   if (overlayPayload?.status === "processing") {
-    return { status: "processing" };
+    return {
+      status: "processing",
+      ...(overlayPayload.stageText ? { stageText: overlayPayload.stageText } : {})
+    };
   }
   if (overlayPayload?.status === "inserting") {
     return { status: "inserting" };
@@ -443,6 +446,7 @@ export interface MainOverlayPayload {
   sessionId: string;
   message?: string;
   code?: string;
+  stageText?: string;
   recoverableText?: string;
   retryHistoryId?: string;
 }
@@ -456,6 +460,7 @@ export function isMainOverlayPayload(payload: unknown): payload is MainOverlayPa
     sessionId?: unknown;
     message?: unknown;
     code?: unknown;
+    stageText?: unknown;
     recoverableText?: unknown;
     retryHistoryId?: unknown;
   };
@@ -463,6 +468,7 @@ export function isMainOverlayPayload(payload: unknown): payload is MainOverlayPa
     typeof value.sessionId === "string" &&
     (value.message === undefined || typeof value.message === "string") &&
     (value.code === undefined || typeof value.code === "string") &&
+    (value.stageText === undefined || typeof value.stageText === "string") &&
     (value.recoverableText === undefined || typeof value.recoverableText === "string") &&
     (value.retryHistoryId === undefined || typeof value.retryHistoryId === "string") &&
     (value.status === "recording" ||

@@ -166,6 +166,27 @@ describe("buildOverlayState", () => {
 
     expect(overlayState).toEqual({ status: "finalizing" });
   });
+
+  it("maps processing overlay payload stage text", () => {
+    const overlayState = buildOverlayState(
+      { status: "processing", sessionId: "session-1" },
+      {
+        status: "processing",
+        sessionId: "session-1",
+        stageText: "Transcribing audio and refining text"
+      },
+      [],
+      0,
+      vi.fn(),
+      vi.fn(),
+      null
+    );
+
+    expect(overlayState).toEqual({
+      status: "processing",
+      stageText: "Transcribing audio and refining text"
+    });
+  });
 });
 
 describe("saveSettingsAndRefreshHistory", () => {
