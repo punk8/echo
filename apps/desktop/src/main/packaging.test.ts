@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -11,10 +11,12 @@ describe("macOS packaging configuration", () => {
     const desktopPackage = readJson("apps/desktop/package.json") as {
       scripts: Record<string, string>;
       devDependencies: Record<string, string>;
+      description?: string;
+      author?: string;
     };
     const builderConfig = readJson("apps/desktop/electron-builder.json") as {
       extraResources: Array<{ from: string; to: string }>;
-      mac: { target: string[]; identity: null };
+      mac: { target: string[]; identity: null; icon: string };
     };
 
     expect(rootPackage.scripts["package:mac"]).toContain("@echo/api build:bundle");
@@ -25,12 +27,16 @@ describe("macOS packaging configuration", () => {
     expect(desktopPackage.scripts["package:mac"]).toContain("electron-builder");
     expect(rootPackage.devDependencies.esbuild).toBeDefined();
     expect(desktopPackage.devDependencies["electron-builder"]).toBeDefined();
+    expect(desktopPackage.description).toContain("dictation");
+    expect(desktopPackage.author).toBe("Echo");
     expect(builderConfig.extraResources).toContainEqual({
       from: "../../services/api/bundle/index.mjs",
       to: "api/index.mjs"
     });
     expect(builderConfig.mac.target).toContain("dir");
     expect(builderConfig.mac.identity).toBeNull();
+    expect(builderConfig.mac.icon).toBe("assets/icon.icns");
+    expect(existsSync(path.join(workspaceRoot, "apps/desktop/assets/icon.icns"))).toBe(true);
   });
 });
 

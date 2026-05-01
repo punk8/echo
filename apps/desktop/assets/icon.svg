@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Echo app icon">
+  <defs>
+    <linearGradient id="bg" x1="160" x2="864" y1="128" y2="896" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0b1014"/>
+      <stop offset="0.54" stop-color="#12302f"/>
+      <stop offset="1" stop-color="#f0b45b"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="42%" r="52%">
+      <stop offset="0" stop-color="#e8fff7" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#e8fff7" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+  <rect width="1024" height="1024" rx="224" fill="url(#glow)"/>
+  <circle cx="512" cy="512" r="282" fill="none" stroke="#f7fbef" stroke-width="56" opacity="0.92"/>
+  <path d="M328 554c48-84 112-126 192-126 72 0 128 32 168 96" fill="none" stroke="#f7fbef" stroke-width="56" stroke-linecap="round"/>
+  <path d="M348 650h328" stroke="#f0b45b" stroke-width="56" stroke-linecap="round"/>
+  <path d="M700 304v416" stroke="#f7fbef" stroke-width="56" stroke-linecap="round"/>
+</svg>

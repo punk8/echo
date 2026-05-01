@@ -19,6 +19,7 @@
     "target": [
       "dir"
     ],
+    "icon": "assets/icon.icns",
     "identity": null
   }
 }
