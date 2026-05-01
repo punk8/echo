@@ -14,6 +14,7 @@ export interface EnsureLocalApiRuntimeInput {
   cwd?: string;
   workspaceRoot?: string;
   resourcePath?: string;
+  executablePath?: string;
   fileExists?: (filePath: string) => boolean;
   fetchImpl?: (url: string) => Promise<{ ok: boolean }>;
   spawn?: (
@@ -69,6 +70,7 @@ export async function ensureLocalApiRuntime(input: EnsureLocalApiRuntimeInput = 
   const localApiCommand = resolveLocalApiCommand({
     workspaceRoot,
     resourcePath: input.resourcePath ?? getElectronResourcePath(),
+    executablePath: input.executablePath ?? process.execPath,
     fileExists: input.fileExists ?? existsSync
   });
   let startupError: string | undefined;
@@ -77,6 +79,7 @@ export async function ensureLocalApiRuntime(input: EnsureLocalApiRuntimeInput = 
     env: {
       ...process.env,
       ...env,
+      ...localApiCommand.env,
       API_HOST: host,
       API_PORT: port
     },
@@ -147,15 +150,17 @@ function findWorkspaceRoot(start: string) {
 function resolveLocalApiCommand(input: {
   workspaceRoot: string;
   resourcePath?: string;
+  executablePath: string;
   fileExists: (filePath: string) => boolean;
 }) {
   if (input.resourcePath) {
     const packagedEntry = path.join(input.resourcePath, packagedApiEntry);
     if (input.fileExists(packagedEntry)) {
       return {
-        command: "node",
+        command: input.executablePath,
         args: [packagedEntry],
-        cwd: input.resourcePath
+        cwd: input.resourcePath,
+        env: { ELECTRON_RUN_AS_NODE: "1" }
       };
     }
   }

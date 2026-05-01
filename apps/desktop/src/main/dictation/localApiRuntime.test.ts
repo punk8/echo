@@ -119,6 +119,7 @@ describe("ensureLocalApiRuntime", () => {
       cwd: "/workspace/echo/apps/desktop",
       workspaceRoot: "/workspace/echo",
       resourcePath: "/Echo.app/Contents/Resources",
+      executablePath: "/Echo.app/Contents/MacOS/Echo",
       spawn,
       fetchImpl,
       fileExists,
@@ -126,10 +127,13 @@ describe("ensureLocalApiRuntime", () => {
     });
 
     expect(spawn).toHaveBeenCalledWith(
-      "node",
+      "/Echo.app/Contents/MacOS/Echo",
       ["/Echo.app/Contents/Resources/api/index.mjs"],
       expect.objectContaining({
-        cwd: "/Echo.app/Contents/Resources"
+        cwd: "/Echo.app/Contents/Resources",
+        env: expect.objectContaining({
+          ELECTRON_RUN_AS_NODE: "1"
+        })
       })
     );
   });
