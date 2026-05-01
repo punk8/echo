@@ -108,6 +108,8 @@ Typeless Mac 不是一个写作编辑器，而是一个系统级语音写作层�
 
 ### 7.1 Home
 
+![Typeless Home：触发提示、用量指标、个性化和增长入口](assets/typeless-hub-home.png)
+
 观察到的结构：
 
 - 左侧主导航：首页、历史记录、词典。
@@ -163,6 +165,8 @@ Typeless Mac 不是一个写作编辑器，而是一个系统级语音写作层�
 
 ### 7.3 Dictionary
 
+![Typeless Dictionary：词条来源筛选、新词入口、搜索和空状态](assets/typeless-hub-dictionary.png)
+
 观察到的结构：
 
 - 标题：词典。
@@ -185,6 +189,8 @@ Typeless Mac 不是一个写作编辑器，而是一个系统级语音写作层�
 - 新增词条默认简单，但高级字段要可展开。
 
 ### 7.4 Settings
+
+![Typeless Settings：快捷键、语言、音频和应用行为配置](assets/typeless-hub-settings.png)
 
 观察到的结构：
 
@@ -217,6 +223,8 @@ Typeless Mac 不是一个写作编辑器，而是一个系统级语音写作层�
 - 录音前必须能看懂麦克风和静音行为。
 
 ### 7.5 Personalization
+
+![Typeless Personalization：隐私说明、个性化分数和数据不足状态](assets/typeless-hub-personalization.png)
 
 观察到的结构：
 
@@ -476,6 +484,19 @@ About 观察到的结构：
 | 录音中 overlay | 菜单栏出现橙色麦克风指示；屏幕底部出现黑色 pill，包含取消按钮、音频波形和确认按钮。 |
 | 处理中/等待 overlay | 截图捕捉到底部黑色 pill 的音频波形和等待点两种形态；但没有“正在处理”文字标签，状态语义需要用户从动效推断。 |
 | Home 反馈面板 | 观察时 Home 的“最后的转录”未同步显示本次测试记录。 |
+
+截图证据：
+
+![菜单栏橙色麦克风指示](assets/typeless-menu-mic-indicator.png)
+
+![底部 pill 等待点形态](assets/typeless-bottom-pill-waiting.png)
+
+![底部 pill 音频波形形态](assets/typeless-bottom-pill-waveform.png)
+
+原始整屏截图存档：
+
+- `assets/typeless-overlay-recording-full.png`
+- `assets/typeless-overlay-waiting-full.png`
 
 设计判断：
 
