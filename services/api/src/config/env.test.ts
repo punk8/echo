@@ -58,4 +58,36 @@ describe("loadApiEnv", () => {
     expect(env.asr.apiKey).toBe("shared-secret");
     expect(env.llm.apiKey).toBe("shared-secret");
   });
+
+  it("defaults blank local placeholders for OpenAI-compatible development", () => {
+    const env = loadApiEnv({
+      API_KEY: "shared-secret",
+      ASR_PROVIDER: "",
+      ASR_MODEL: "",
+      ASR_BASE_URL: "默认",
+      LLM_PROVIDER: "",
+      LLM_MODEL: "gpt-4o",
+      LLM_BASE_URL: "默认"
+    });
+
+    expect(env.asr.provider).toBe("openai");
+    expect(env.asr.model).toBe("gpt-4o-transcribe");
+    expect(env.asr.baseUrl).toBe("https://api.openai.com/v1");
+    expect(env.llm.provider).toBe("openai-compatible");
+    expect(env.llm.baseUrl).toBe("https://api.openai.com/v1");
+  });
+
+  it("keeps LLM model explicit even when other placeholders have defaults", () => {
+    expect(() =>
+      loadApiEnv({
+        API_KEY: "shared-secret",
+        ASR_PROVIDER: "",
+        ASR_MODEL: "",
+        ASR_BASE_URL: "默认",
+        LLM_PROVIDER: "",
+        LLM_MODEL: "",
+        LLM_BASE_URL: "默认"
+      })
+    ).toThrow("config.llm_missing");
+  });
 });

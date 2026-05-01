@@ -1,18 +1,20 @@
 import { z } from "zod";
 
+const defaultOpenAIBaseUrl = "https://api.openai.com/v1";
+
 const EnvSchema = z.object({
   API_HOST: z.string().default("127.0.0.1"),
   API_PORT: z.coerce.number().int().positive().default(43110),
-  API_KEY: z.string().min(1).optional(),
-  ASR_PROVIDER: z.literal("openai"),
-  ASR_MODEL: z.literal("gpt-4o-transcribe"),
-  ASR_BASE_URL: z.string().url(),
-  ASR_API_KEY: z.string().min(1, "config.asr_missing").optional(),
+  API_KEY: optionalNonEmptyString(),
+  ASR_PROVIDER: stringWithDefault("openai").pipe(z.literal("openai")),
+  ASR_MODEL: stringWithDefault("gpt-4o-transcribe").pipe(z.literal("gpt-4o-transcribe")),
+  ASR_BASE_URL: stringWithDefault(defaultOpenAIBaseUrl).pipe(z.string().url()),
+  ASR_API_KEY: optionalNonEmptyString("config.asr_missing"),
   ASR_LANGUAGE: z.string().default("auto"),
-  LLM_PROVIDER: z.literal("openai-compatible"),
-  LLM_MODEL: z.string().min(1, "config.llm_missing"),
-  LLM_BASE_URL: z.string().url(),
-  LLM_API_KEY: z.string().min(1, "config.llm_missing").optional(),
+  LLM_PROVIDER: stringWithDefault("openai-compatible").pipe(z.literal("openai-compatible")),
+  LLM_MODEL: requiredNonEmptyString("config.llm_missing"),
+  LLM_BASE_URL: stringWithDefault(defaultOpenAIBaseUrl).pipe(z.string().url()),
+  LLM_API_KEY: optionalNonEmptyString("config.llm_missing"),
   LLM_TEMPERATURE: z.coerce.number().min(0).max(1).default(0.2)
 });
 
@@ -55,4 +57,29 @@ export function loadApiEnv(input: NodeJS.ProcessEnv) {
       temperature: parsed.data.LLM_TEMPERATURE
     }
   } as const;
+}
+
+function optionalNonEmptyString(message = "config.invalid") {
+  return z.preprocess((value) => normalizeBlank(value), z.string().min(1, message).optional());
+}
+
+function requiredNonEmptyString(message: string) {
+  return z.preprocess((value) => normalizeBlank(value), z.string({ required_error: message }).min(1, message));
+}
+
+function stringWithDefault(defaultValue: string) {
+  return z.preprocess((value) => normalizeBlank(value) ?? defaultValue, z.string());
+}
+
+function normalizeBlank(value: unknown) {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "默认" || trimmed.toLowerCase() === "default") {
+    return undefined;
+  }
+
+  return trimmed;
 }
