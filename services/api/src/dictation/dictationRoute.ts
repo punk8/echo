@@ -7,6 +7,7 @@ import {
   type DictationPreferences,
   type DictionaryTerm
 } from "@echo/shared";
+import type { z } from "zod";
 import type { ASRProvider } from "../providers/asr/ASRProvider.js";
 import type { LLMProvider } from "../providers/llm/LLMProvider.js";
 import { buildDictationPrompt } from "../refiner/buildDictationPrompt.js";
@@ -145,9 +146,9 @@ async function parseMultipart(request: FastifyRequest, maxAudioBytes: number): P
     audioFormat,
     durationMs: parseDurationMs(required(fields, "duration_ms")),
     language: required(fields, "language"),
-    context: DictationContextSchema.parse(JSON.parse(required(fields, "context"))),
-    dictionary: DictionaryTermSchema.array().parse(JSON.parse(required(fields, "dictionary"))),
-    preferences: DictationPreferencesSchema.parse(JSON.parse(required(fields, "preferences"))),
+    context: parseJsonField(fields, "context", DictationContextSchema),
+    dictionary: parseJsonField(fields, "dictionary", DictionaryTermSchema.array()),
+    preferences: parseJsonField(fields, "preferences", DictationPreferencesSchema),
     audio,
     filename,
     mimeType
@@ -185,6 +186,14 @@ function parseDurationMs(value: string) {
   return durationMs;
 }
 
+function parseJsonField<T>(fields: Map<string, string>, key: string, schema: z.ZodType<T>) {
+  try {
+    return schema.parse(JSON.parse(required(fields, key)));
+  } catch {
+    throw new Error("server.invalid_request");
+  }
+}
+
 function normalizeMimeType(value: string): "audio/webm" | "audio/wav" {
   if (value === "audio/webm") {
     return "audio/webm";
@@ -210,7 +219,12 @@ function sendError(reply: FastifyReply, recovery: { sessionId: string; rawText: 
 }
 
 function statusForError(code: string) {
-  if (code.startsWith("missing.") || code === "server.unsupported_audio_format" || code === "server.invalid_duration") {
+  if (
+    code.startsWith("missing.") ||
+    code === "server.unsupported_audio_format" ||
+    code === "server.invalid_duration" ||
+    code === "server.invalid_request"
+  ) {
     return 400;
   }
   if (code === "audio.no_speech_detected") {
@@ -252,6 +266,9 @@ function messageForCode(code: string) {
   }
   if (code === "server.invalid_duration") {
     return "Invalid recording duration.";
+  }
+  if (code === "server.invalid_request") {
+    return "Invalid dictation request.";
   }
   return "Dictation processing failed.";
 }

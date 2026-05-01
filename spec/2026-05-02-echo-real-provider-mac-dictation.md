@@ -414,6 +414,7 @@ Server/config errors:
 - `server.provider_rate_limited`
 - `server.audio_too_large`
 - `server.unsupported_audio_format`
+- `server.invalid_request`
 
 Recovery requirements:
 

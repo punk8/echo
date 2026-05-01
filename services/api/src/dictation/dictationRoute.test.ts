@@ -348,6 +348,59 @@ describe("POST /v1/dictation/process", () => {
     expect(asrCalled).toBe(false);
   });
 
+  it("rejects malformed JSON request fields before provider calls", async () => {
+    let asrCalled = false;
+    const app = buildServer({
+      asr: {
+        transcribe: async () => {
+          asrCalled = true;
+          return {
+            rawText: "hello",
+            language: "en",
+            provider: "openai:gpt-4o-transcribe",
+            durationMs: 12
+          };
+        }
+      },
+      llm: {
+        complete: async () => {
+          throw new Error("server.refine_failed");
+        }
+      }
+    });
+
+    const multipart = multipartBody([
+      { name: "session_id", value: "session-1" },
+      { name: "audio_format", value: "webm" },
+      { name: "duration_ms", value: "1200" },
+      { name: "language", value: "auto" },
+      { name: "context", value: "{not-json" },
+      {
+        name: "dictionary",
+        value: JSON.stringify([{ term: "Echo", aliases: [], case_sensitive: true, source: "manual" }])
+      },
+      {
+        name: "preferences",
+        value: JSON.stringify({ style: "balanced", output_language: "follow_input", format_lists: true })
+      },
+      { name: "audio", filename: "dictation.webm", contentType: "audio/webm", value: "audio-bytes" }
+    ]);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/dictation/process",
+      payload: multipart.body,
+      headers: multipart.headers
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error).toMatchObject({
+      code: "server.invalid_request",
+      message: "Invalid dictation request."
+    });
+    expect(asrCalled).toBe(false);
+  });
+
   it("returns specific messages for provider rate limits", async () => {
     const app = buildServer({
       asr: {
