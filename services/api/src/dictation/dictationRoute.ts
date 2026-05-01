@@ -129,7 +129,7 @@ async function parseMultipart(request: FastifyRequest, maxAudioBytes: number): P
   }
 
   if (!audio) {
-    throw new Error("server.audio_missing");
+    throw new Error("server.invalid_request");
   }
   if (audio.byteLength > maxAudioBytes) {
     throw new Error("server.audio_too_large");
