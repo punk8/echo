@@ -3,8 +3,8 @@
 ## Preconditions
 
 - `.env` contains valid real provider credentials.
-- Backend is running with `pnpm dev:api`.
-- Desktop app is running with `pnpm dev:desktop`.
+- Desktop app is running with `pnpm dev`.
+- If `API_BASE_URL` is unset, confirm the desktop app auto-starts or reuses the local API at `http://127.0.0.1:43110`.
 - Microphone permission is granted.
 - Accessibility permission is granted for the terminal or app host running Electron.
 

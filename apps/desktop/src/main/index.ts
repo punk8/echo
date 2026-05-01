@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { rm } from "node:fs/promises";
 import { app, BrowserWindow, ipcMain, shell } from "electron";
 import { processDictation } from "./dictation/backendClient";
+import { ensureLocalApiRuntime, type LocalApiRuntime } from "./dictation/localApiRuntime";
 import { checkProviderStatus } from "./dictation/providerStatus";
 import { createRendererRecorderBridge } from "./dictation/rendererRecorderBridge";
 import { createDictationSessionController } from "./dictation/sessionController";
@@ -24,6 +25,7 @@ import { resolvePreloadPath, resolveRendererIndexPath } from "./windowPaths";
 
 let hubWindow: BrowserWindow | undefined;
 let overlayWindow: BrowserWindow | undefined;
+let apiRuntime: LocalApiRuntime | undefined;
 
 const gotLock = app.requestSingleInstanceLock();
 
@@ -40,7 +42,9 @@ if (!gotLock) {
     hubWindow.focus();
   });
 
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
+    const runtime = await ensureLocalApiRuntime();
+    apiRuntime = runtime;
     const windows = createWindows();
     hubWindow = windows.hubWindow;
     overlayWindow = windows.overlayWindow;
@@ -67,7 +71,7 @@ if (!gotLock) {
       getPermissionStatus,
       captureContext,
       recorder,
-      backend: (input) => processDictation({ ...input, apiBaseUrl: getApiBaseUrl() }),
+      backend: (input) => processDictation({ ...input, apiBaseUrl: runtime.apiBaseUrl }),
       insertText: pasteTextWithClipboardFallback,
       copyText: copyTextToClipboard,
       deleteLocalRecording: (localPath) => rm(localPath, { force: true }),
@@ -107,7 +111,7 @@ if (!gotLock) {
     });
     const dictationHandlers = {
       ...controller,
-      getProviderStatus: () => checkProviderStatus({ apiBaseUrl: getApiBaseUrl() })
+      getProviderStatus: () => checkProviderStatus({ apiBaseUrl: runtime.apiBaseUrl })
     };
 
     const shortcutController = createDictationShortcutController({
@@ -164,17 +168,11 @@ if (!gotLock) {
       app.quit();
     }
   });
-}
 
-function getApiBaseUrl() {
-  const explicit = process.env.API_BASE_URL;
-  if (explicit) {
-    return explicit;
-  }
-
-  const host = process.env.API_HOST ?? "127.0.0.1";
-  const port = process.env.API_PORT ?? "43110";
-  return `http://${host}:${port}`;
+  app.on("before-quit", () => {
+    apiRuntime?.stop();
+    apiRuntime = undefined;
+  });
 }
 
 function createWindows() {

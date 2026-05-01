@@ -11,22 +11,26 @@ Echo does not ship a production mock provider. Local development expects a real 
 
 ## Run
 
-Start the backend:
+Start the desktop app:
+
+```bash
+pnpm dev
+```
+
+When `API_BASE_URL` is not set, the Electron main process checks `http://127.0.0.1:43110/health` and starts the local API service automatically if nothing is already listening there.
+
+To run the backend manually for API-only work:
 
 ```bash
 pnpm dev:api
 ```
 
-Start the desktop app:
+To point the desktop app at a user-managed or hosted backend, set `API_BASE_URL`; in that mode the desktop app does not spawn a local API process.
+
+To run only the desktop app while still allowing it to manage the local API:
 
 ```bash
 pnpm dev:desktop
-```
-
-Or run both:
-
-```bash
-pnpm dev
 ```
 
 The desktop dev and preview scripts rebuild `better-sqlite3` for Electron before launching. If you later need to run Node/Vitest storage tests in the same checkout, rebuild native modules for Node again:
@@ -35,7 +39,7 @@ The desktop dev and preview scripts rebuild `better-sqlite3` for Electron before
 pnpm --filter @echo/desktop rebuild:native:node
 ```
 
-The desktop app calls `http://127.0.0.1:43110` by default. Override with `API_BASE_URL` when needed.
+The desktop app calls `http://127.0.0.1:43110` by default. Override host and port with `API_HOST` and `API_PORT`, or override the complete backend URL with `API_BASE_URL`.
 
 ## Verification
 

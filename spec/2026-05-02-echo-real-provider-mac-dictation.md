@@ -168,7 +168,17 @@ POST /v1/dictation/process
 -> response
 ```
 
-The backend must be a separate local development service, even if it runs on the same machine. This keeps provider keys outside the Electron renderer and preserves a path to hosted backend deployment.
+The backend must be a separate service process, even if it runs on the same machine. This keeps provider keys outside the Electron renderer and preserves a path to hosted backend deployment.
+
+For local desktop use, the Electron main process should manage that local API service when `API_BASE_URL` is not explicitly set:
+
+- If `API_BASE_URL` is set, Echo treats it as a user-managed or hosted backend and does not spawn a local API child process.
+- If `API_BASE_URL` is unset, Echo starts the local API as a child process with the same provider environment variables as the desktop process.
+- The desktop app checks `/health` before starting a child process, so an already-running local API on the configured host/port is reused.
+- The child process is terminated when the desktop app exits.
+- Startup failures must be surfaced as provider status/config errors without exposing secrets in the UI or logs.
+
+This keeps the implementation compatible with the development service model while making the desktop app usable without requiring a separate terminal command.
 
 ## 8. API Contracts
 
