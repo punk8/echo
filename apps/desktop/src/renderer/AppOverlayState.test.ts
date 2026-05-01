@@ -91,6 +91,42 @@ describe("buildOverlayState", () => {
     expect(onFinish).not.toHaveBeenCalled();
   });
 
+  it("maps accessibility permission errors to a settings recovery action", () => {
+    const onResolvePermission = vi.fn();
+    const overlayState = buildOverlayState(
+      {
+        status: "error",
+        sessionId: "session-1",
+        code: "permission.accessibility_missing",
+        message: "Accessibility permission is required to insert dictation into other apps."
+      },
+      {
+        status: "error",
+        sessionId: "session-1",
+        code: "permission.accessibility_missing",
+        message: "Accessibility permission is required to insert dictation into other apps."
+      },
+      [],
+      0,
+      vi.fn(),
+      vi.fn(),
+      null,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+      onResolvePermission
+    );
+
+    if (overlayState.status !== "error") {
+      throw new Error("expected error overlay state");
+    }
+
+    expect(overlayState.recoveryActionLabel).toBe("Open Accessibility Settings");
+    overlayState.onRecoveryAction?.();
+
+    expect(onResolvePermission).toHaveBeenCalledWith("permission.accessibility_missing");
+  });
+
   it("maps copied overlay payloads to manual paste state", () => {
     const overlayState = buildOverlayState(
       { status: "complete", sessionId: "session-1" },

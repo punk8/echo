@@ -52,6 +52,24 @@ describe("Overlay", () => {
     expect(markup).toContain("Dismiss");
   });
 
+  it("shows a recovery action on permission errors", () => {
+    const markup = renderToStaticMarkup(
+      <Overlay
+        state={{
+          status: "error",
+          message: "Accessibility permission is required.",
+          recoveryActionLabel: "Open Accessibility Settings",
+          onRecoveryAction: vi.fn(),
+          onRetry: vi.fn(),
+          onCopy: vi.fn(),
+          onDismiss: vi.fn()
+        }}
+      />
+    );
+
+    expect(markup).toContain("Open Accessibility Settings");
+  });
+
   it("labels recoverable raw transcript text as unrefined", () => {
     const markup = renderToStaticMarkup(
       <Overlay

@@ -137,7 +137,8 @@ export function App() {
         error,
         undefined,
         dismissOverlay,
-        retryHistoryRow
+        retryHistoryRow,
+        resolvePermissionError
       ),
     [snapshot.state, overlayPayload, levelSamples, elapsedMs, error]
   );
@@ -300,6 +301,16 @@ export function App() {
   async function requestAccessibilityPermission() {
     setPermissions(await desktopApi.requestAccessibilityPermission());
   }
+
+  async function resolvePermissionError(code: string) {
+    if (code === "permission.microphone_missing") {
+      await requestMicrophonePermission();
+      return;
+    }
+    if (code === "permission.accessibility_missing") {
+      await requestAccessibilityPermission();
+    }
+  }
 }
 
 export function buildOverlayState(
@@ -312,7 +323,8 @@ export function buildOverlayState(
   error: string | null,
   writeClipboard: (text: string) => void | Promise<void> = (text) => navigator.clipboard.writeText(text),
   onDismiss: () => void = onCancel,
-  onRetryHistory: (historyId: string) => void | Promise<void> = () => onFinish()
+  onRetryHistory: (historyId: string) => void | Promise<void> = () => onFinish(),
+  onResolvePermission: (code: string) => void | Promise<void> = () => undefined
 ): OverlayState {
   if (error) {
     return {
@@ -352,10 +364,17 @@ export function buildOverlayState(
     const message = overlayPayload.message ?? "Dictation failed.";
     const copyText = overlayPayload.recoverableText ?? message;
     const retryHistoryId = overlayPayload.retryHistoryId;
+    const recoveryActionLabel = permissionRecoveryActionLabel(overlayPayload.code);
     return {
       status: "error",
       message,
       ...(overlayPayload.recoverableText ? { recoverableText: overlayPayload.recoverableText } : {}),
+      ...(recoveryActionLabel && overlayPayload.code
+        ? {
+            recoveryActionLabel,
+            onRecoveryAction: () => void onResolvePermission(overlayPayload.code as string)
+          }
+        : {}),
       onRetry: retryHistoryId ? () => void onRetryHistory(retryHistoryId) : onFinish,
       onCopy: () => void writeClipboard(copyText),
       onDismiss
@@ -374,9 +393,16 @@ export function buildOverlayState(
     return { status: "complete" };
   }
   if (state.status === "error") {
+    const recoveryActionLabel = permissionRecoveryActionLabel(state.code);
     return {
       status: "error",
       message: state.message,
+      ...(recoveryActionLabel
+        ? {
+            recoveryActionLabel,
+            onRecoveryAction: () => void onResolvePermission(state.code)
+          }
+        : {}),
       onRetry: onFinish,
       onCopy: () => void writeClipboard(state.message),
       onDismiss
@@ -389,6 +415,7 @@ export interface MainOverlayPayload {
   status: "recording" | "finalizing" | "processing" | "inserting" | "copied" | "complete" | "error";
   sessionId: string;
   message?: string;
+  code?: string;
   recoverableText?: string;
   retryHistoryId?: string;
 }
@@ -397,9 +424,18 @@ export function isMainOverlayPayload(payload: unknown): payload is MainOverlayPa
   if (!payload || typeof payload !== "object") {
     return false;
   }
-  const value = payload as { status?: unknown; sessionId?: unknown; recoverableText?: unknown; retryHistoryId?: unknown };
+  const value = payload as {
+    status?: unknown;
+    sessionId?: unknown;
+    message?: unknown;
+    code?: unknown;
+    recoverableText?: unknown;
+    retryHistoryId?: unknown;
+  };
   return (
     typeof value.sessionId === "string" &&
+    (value.message === undefined || typeof value.message === "string") &&
+    (value.code === undefined || typeof value.code === "string") &&
     (value.recoverableText === undefined || typeof value.recoverableText === "string") &&
     (value.retryHistoryId === undefined || typeof value.retryHistoryId === "string") &&
     (value.status === "recording" ||
@@ -410,4 +446,14 @@ export function isMainOverlayPayload(payload: unknown): payload is MainOverlayPa
       value.status === "complete" ||
       value.status === "error")
   );
+}
+
+function permissionRecoveryActionLabel(code: string | undefined) {
+  if (code === "permission.accessibility_missing") {
+    return "Open Accessibility Settings";
+  }
+  if (code === "permission.microphone_missing") {
+    return "Open Microphone Settings";
+  }
+  return undefined;
 }
