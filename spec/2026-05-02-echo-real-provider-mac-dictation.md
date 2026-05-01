@@ -95,7 +95,7 @@ Required configuration:
 
 Runtime behavior:
 
-- If LLM configuration is missing, dictation must fail with `config.llm_missing`; it must not silently fall back to a mock or return raw ASR text as final output.
+- If LLM configuration is missing, dictation must fail with the exact missing setting error, such as `config.llm_model_missing` or `config.llm_key_missing`; it must not silently fall back to a mock or return raw ASR text as final output.
 - If the managed local API reports a provider configuration startup error, the desktop app must block dictation before microphone recording starts and show the exact missing provider setting.
 - If ASR succeeds but refinement fails, the app may show the raw transcript in the error recovery panel with Copy and Retry actions, but it must clearly label the result as unrefined.
 - The product default remains polished dictation, not raw transcription.
