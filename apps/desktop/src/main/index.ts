@@ -77,6 +77,10 @@ if (!gotLock) {
           overlay.showInactive();
           overlay.webContents.send("echo:overlay-state", { status: "processing", sessionId });
         },
+        showInserting: ({ sessionId }) => {
+          overlay.showInactive();
+          overlay.webContents.send("echo:overlay-state", { status: "inserting", sessionId });
+        },
         showError: ({ sessionId, code, message }) => {
           overlay.showInactive();
           overlay.webContents.send("echo:overlay-state", { status: "error", sessionId, code, message });

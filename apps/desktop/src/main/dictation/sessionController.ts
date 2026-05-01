@@ -35,6 +35,7 @@ export interface DictationSessionControllerDeps {
   overlay: {
     showRecording: (input: { sessionId: string; context: DictationContext }) => void;
     showProcessing: (input: { sessionId: string }) => void;
+    showInserting: (input: { sessionId: string }) => void;
     showError: (input: { sessionId: string; code: string; message: string }) => void;
     showComplete: (input: { sessionId: string }) => void;
     hide: () => void;
@@ -118,6 +119,7 @@ export function createDictationSessionController(deps: DictationSessionControlle
       });
 
       state = applyDictationEvent(state, { type: "insert_started" });
+      deps.overlay.showInserting({ sessionId: session.sessionId });
       const currentContext = await deps.captureContext();
       const insertion = isSameInsertionTarget(session.context, currentContext)
         ? await deps.insertText(response.refined_text)

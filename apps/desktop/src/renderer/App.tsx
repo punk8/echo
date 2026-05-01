@@ -290,6 +290,9 @@ function buildOverlayState(
   if (overlayPayload?.status === "processing") {
     return { status: "processing" };
   }
+  if (overlayPayload?.status === "inserting") {
+    return { status: "inserting" };
+  }
   if (overlayPayload?.status === "complete") {
     return { status: "complete" };
   }
@@ -328,7 +331,7 @@ function buildOverlayState(
 }
 
 interface MainOverlayPayload {
-  status: "recording" | "processing" | "complete" | "error";
+  status: "recording" | "processing" | "inserting" | "complete" | "error";
   sessionId: string;
   message?: string;
 }
@@ -340,6 +343,10 @@ function isMainOverlayPayload(payload: unknown): payload is MainOverlayPayload {
   const value = payload as { status?: unknown; sessionId?: unknown };
   return (
     typeof value.sessionId === "string" &&
-    (value.status === "recording" || value.status === "processing" || value.status === "complete" || value.status === "error")
+    (value.status === "recording" ||
+      value.status === "processing" ||
+      value.status === "inserting" ||
+      value.status === "complete" ||
+      value.status === "error")
   );
 }

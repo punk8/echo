@@ -61,6 +61,7 @@ function createDeps() {
       overlay: {
         showRecording: vi.fn(),
         showProcessing: vi.fn(),
+        showInserting: vi.fn(),
         showError: vi.fn(),
         showComplete: vi.fn(),
         hide: vi.fn()
@@ -114,6 +115,7 @@ describe("createDictationSessionController", () => {
     const snapshot = await controller.stopDictation();
 
     expect(deps.backend).toHaveBeenCalledWith(expect.objectContaining({ sessionId: "session-1", audioFormat: "webm" }));
+    expect(deps.overlay.showInserting).toHaveBeenCalledWith({ sessionId: "session-1" });
     expect(deps.insertText).toHaveBeenCalledWith("Tomorrow at three.");
     expect(historyRows).toHaveLength(1);
     expect(historyRows[0]).toMatchObject({
