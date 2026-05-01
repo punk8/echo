@@ -1,0 +1,210 @@
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import {
+  DictationContextSchema,
+  DictationPreferencesSchema,
+  DictionaryTermSchema,
+  type DictationContext,
+  type DictationPreferences,
+  type DictionaryTerm
+} from "@echo/shared";
+import type { ASRProvider } from "../providers/asr/ASRProvider";
+import type { LLMProvider } from "../providers/llm/LLMProvider";
+import { buildDictationPrompt } from "../refiner/buildDictationPrompt";
+import { validateRefinedResult } from "../refiner/validateRefinedResult";
+
+export interface DictationRouteDeps {
+  asr: ASRProvider;
+  llm: LLMProvider;
+}
+
+interface ParsedMultipart {
+  sessionId: string;
+  audioFormat: "webm" | "wav";
+  durationMs: number;
+  language: string;
+  context: DictationContext;
+  dictionary: DictionaryTerm[];
+  preferences: DictationPreferences;
+  audio: Buffer;
+  filename: string;
+  mimeType: "audio/webm" | "audio/wav";
+}
+
+export async function registerDictationRoute(app: FastifyInstance, deps: DictationRouteDeps) {
+  app.post("/v1/dictation/process", async (request, reply) => {
+    const receivedAt = new Date();
+
+    try {
+      const parsed = await parseMultipart(request);
+      const asrPrompt = buildDictionaryPrompt(parsed.dictionary);
+      const asrInput = {
+        audio: parsed.audio,
+        filename: parsed.filename,
+        mimeType: parsed.mimeType,
+        language: parsed.language
+      };
+      const asrResult = await deps.asr.transcribe(asrPrompt ? { ...asrInput, prompt: asrPrompt } : asrInput);
+
+      const prompt = buildDictationPrompt({
+        rawText: asrResult.rawText,
+        language: asrResult.language,
+        context: parsed.context,
+        dictionary: parsed.dictionary,
+        preferences: parsed.preferences
+      });
+
+      const llmResult = await deps.llm.complete({
+        messages: [
+          { role: "system", content: prompt.system },
+          { role: "user", content: prompt.user }
+        ],
+        temperature: 0.2,
+        responseFormat: "json_object"
+      });
+
+      const refined = validateRefinedResult({
+        rawText: asrResult.rawText,
+        llmContent: llmResult.content,
+        dictionaryTerms: parsed.dictionary.map((term) => term.term)
+      });
+
+      const asrMs = asrResult.durationMs ?? 0;
+      const refineMs = llmResult.durationMs ?? 0;
+
+      return reply.send({
+        session_id: parsed.sessionId,
+        raw_text: asrResult.rawText,
+        refined_text: refined.refinedText,
+        language: refined.language,
+        provider: {
+          asr: asrResult.provider,
+          llm: llmResult.provider
+        },
+        timing: {
+          upload_received_at: receivedAt.toISOString(),
+          asr_ms: asrMs,
+          refine_ms: refineMs,
+          total_ms: asrMs + refineMs
+        },
+        quality: {
+          risk: refined.risk,
+          warnings: refined.warnings
+        }
+      });
+    } catch (error) {
+      return sendError(reply, request, error);
+    }
+  });
+}
+
+async function parseMultipart(request: FastifyRequest): Promise<ParsedMultipart> {
+  const fields = new Map<string, string>();
+  let audio: Buffer | undefined;
+  let filename = "dictation.webm";
+  let mimeType: "audio/webm" | "audio/wav" = "audio/webm";
+
+  for await (const part of request.parts()) {
+    if (part.type === "file") {
+      if (part.fieldname !== "audio") {
+        continue;
+      }
+      audio = await part.toBuffer();
+      filename = part.filename;
+      mimeType = normalizeMimeType(part.mimetype);
+      continue;
+    }
+
+    fields.set(part.fieldname, String(part.value));
+  }
+
+  if (!audio) {
+    throw new Error("server.audio_missing");
+  }
+
+  const audioFormat = parseAudioFormat(required(fields, "audio_format"));
+  const expectedMimeType = audioFormat === "webm" ? "audio/webm" : "audio/wav";
+  if (mimeType !== expectedMimeType) {
+    throw new Error("server.unsupported_audio_format");
+  }
+
+  return {
+    sessionId: required(fields, "session_id"),
+    audioFormat,
+    durationMs: Number(required(fields, "duration_ms")),
+    language: required(fields, "language"),
+    context: DictationContextSchema.parse(JSON.parse(required(fields, "context"))),
+    dictionary: DictionaryTermSchema.array().parse(JSON.parse(required(fields, "dictionary"))),
+    preferences: DictationPreferencesSchema.parse(JSON.parse(required(fields, "preferences"))),
+    audio,
+    filename,
+    mimeType
+  };
+}
+
+function buildDictionaryPrompt(dictionary: DictionaryTerm[]) {
+  if (dictionary.length === 0) {
+    return undefined;
+  }
+
+  return `User dictionary: ${dictionary.map((term) => term.term).join(", ")}`;
+}
+
+function required(fields: Map<string, string>, key: string) {
+  const value = fields.get(key);
+  if (!value) {
+    throw new Error(`missing.${key}`);
+  }
+  return value;
+}
+
+function parseAudioFormat(value: string): "webm" | "wav" {
+  if (value === "webm" || value === "wav") {
+    return value;
+  }
+  throw new Error("server.unsupported_audio_format");
+}
+
+function normalizeMimeType(value: string): "audio/webm" | "audio/wav" {
+  if (value === "audio/webm") {
+    return "audio/webm";
+  }
+  if (value === "audio/wav" || value === "audio/wave" || value === "audio/x-wav") {
+    return "audio/wav";
+  }
+  throw new Error("server.unsupported_audio_format");
+}
+
+function sendError(reply: FastifyReply, request: FastifyRequest, error: unknown) {
+  const code = error instanceof Error ? error.message : "server.refine_failed";
+  const sessionId = typeof request.body === "object" && request.body && "session_id" in request.body ? String(request.body.session_id) : "";
+
+  return reply.status(statusForError(code)).send({
+    session_id: sessionId,
+    error: {
+      code,
+      message: messageForCode(code),
+      recoverable: true
+    },
+    raw_text: ""
+  });
+}
+
+function statusForError(code: string) {
+  if (code.startsWith("missing.") || code === "server.unsupported_audio_format") {
+    return 400;
+  }
+  return 500;
+}
+
+function messageForCode(code: string) {
+  if (code === "server.asr_failed") {
+    return "Speech recognition failed.";
+  }
+  if (code === "server.refine_failed") {
+    return "Dictation refinement failed.";
+  }
+  if (code === "server.unsupported_audio_format") {
+    return "Unsupported audio format.";
+  }
+  return "Dictation processing failed.";
+}
