@@ -160,7 +160,15 @@ function buildDictionaryPrompt(dictionary: DictionaryTerm[]) {
     return undefined;
   }
 
-  return `User dictionary: ${dictionary.map((term) => term.term).join(", ")}`;
+  const terms = dictionary.map((term) => {
+    const aliases = term.aliases.length > 0 ? ` aliases=${term.aliases.join(", ")}` : "";
+    const pronunciation = term.pronunciation_hint ? ` pronunciation=${term.pronunciation_hint}` : "";
+    const capitalization = term.capitalization ? ` capitalization=${term.capitalization}` : "";
+    const language = term.language ? ` language=${term.language}` : "";
+    return `${term.term}${aliases}${pronunciation}${capitalization}${language}`;
+  });
+
+  return `User dictionary terms:\n${terms.map((term) => `- ${term}`).join("\n")}`;
 }
 
 function required(fields: Map<string, string>, key: string) {

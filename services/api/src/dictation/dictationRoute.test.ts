@@ -88,6 +88,80 @@ describe("POST /v1/dictation/process", () => {
     expect(response.json().provider.asr).toBe("openai:gpt-4o-transcribe");
   });
 
+  it("passes dictionary aliases, pronunciation, capitalization, and language to ASR prompt", async () => {
+    let asrPrompt = "";
+    const app = buildServer({
+      asr: {
+        transcribe: async (input) => {
+          asrPrompt = input.prompt ?? "";
+          return {
+            rawText: "use Echo today",
+            language: "en",
+            provider: "openai:gpt-4o-transcribe",
+            durationMs: 12
+          };
+        }
+      },
+      llm: {
+        complete: async () => ({
+          content: "{\"refined_text\":\"Use Echo today.\",\"language\":\"en\",\"edits\":[],\"risk\":\"low\",\"warnings\":[]}",
+          provider: "openai-compatible:gpt-4o",
+          durationMs: 8
+        })
+      }
+    });
+
+    const multipart = multipartBody([
+      { name: "session_id", value: "session-1" },
+      { name: "audio_format", value: "webm" },
+      { name: "duration_ms", value: "1200" },
+      { name: "language", value: "auto" },
+      {
+        name: "context",
+        value: JSON.stringify({
+          app_name: "TextEdit",
+          bundle_id: "com.apple.TextEdit",
+          window_title: "Untitled",
+          writable: true,
+          selection_present: false,
+          nearby_text: ""
+        })
+      },
+      {
+        name: "dictionary",
+        value: JSON.stringify([
+          {
+            term: "Echo",
+            aliases: ["Echo app"],
+            case_sensitive: true,
+            source: "manual",
+            pronunciation_hint: "EH-koh",
+            capitalization: "Echo",
+            language: "en"
+          }
+        ])
+      },
+      {
+        name: "preferences",
+        value: JSON.stringify({ style: "balanced", output_language: "follow_input", format_lists: true })
+      },
+      { name: "audio", filename: "dictation.webm", contentType: "audio/webm", value: "audio-bytes" }
+    ]);
+
+    await app.inject({
+      method: "POST",
+      url: "/v1/dictation/process",
+      payload: multipart.body,
+      headers: multipart.headers
+    });
+
+    expect(asrPrompt).toContain("Echo");
+    expect(asrPrompt).toContain("aliases=Echo app");
+    expect(asrPrompt).toContain("pronunciation=EH-koh");
+    expect(asrPrompt).toContain("capitalization=Echo");
+    expect(asrPrompt).toContain("language=en");
+  });
+
   it("returns raw transcript for recovery when refinement fails after ASR succeeds", async () => {
     const app = buildServer({
       asr: {
