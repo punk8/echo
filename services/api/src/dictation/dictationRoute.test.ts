@@ -151,6 +151,76 @@ describe("POST /v1/dictation/process", () => {
     });
   });
 
+  it("returns no-speech when ASR produces an empty transcript", async () => {
+    let llmCalled = false;
+    const app = buildServer({
+      asr: {
+        transcribe: async () => ({
+          rawText: "   ",
+          language: "en",
+          provider: "openai:gpt-4o-transcribe",
+          durationMs: 12
+        })
+      },
+      llm: {
+        complete: async () => {
+          llmCalled = true;
+          return {
+            content: "{\"refined_text\":\"\",\"language\":\"en\",\"edits\":[],\"risk\":\"low\",\"warnings\":[]}",
+            provider: "openai-compatible:gpt-4o",
+            durationMs: 8
+          };
+        }
+      }
+    });
+
+    const multipart = multipartBody([
+      { name: "session_id", value: "session-1" },
+      { name: "audio_format", value: "webm" },
+      { name: "duration_ms", value: "1200" },
+      { name: "language", value: "auto" },
+      {
+        name: "context",
+        value: JSON.stringify({
+          app_name: "TextEdit",
+          bundle_id: "com.apple.TextEdit",
+          window_title: "Untitled",
+          writable: true,
+          selection_present: false,
+          nearby_text: ""
+        })
+      },
+      {
+        name: "dictionary",
+        value: JSON.stringify([{ term: "Echo", aliases: [], case_sensitive: true, source: "manual" }])
+      },
+      {
+        name: "preferences",
+        value: JSON.stringify({ style: "balanced", output_language: "follow_input", format_lists: true })
+      },
+      { name: "audio", filename: "dictation.webm", contentType: "audio/webm", value: "audio-bytes" }
+    ]);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/dictation/process",
+      payload: multipart.body,
+      headers: multipart.headers
+    });
+
+    expect(response.statusCode).toBe(422);
+    expect(response.json()).toMatchObject({
+      session_id: "session-1",
+      error: {
+        code: "audio.no_speech_detected",
+        message: "No speech was detected. Try again closer to the microphone.",
+        recoverable: true
+      },
+      raw_text: "   "
+    });
+    expect(llmCalled).toBe(false);
+  });
+
   it("returns specific messages for provider rate limits", async () => {
     const app = buildServer({
       asr: {

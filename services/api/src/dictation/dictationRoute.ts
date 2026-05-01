@@ -48,6 +48,9 @@ export async function registerDictationRoute(app: FastifyInstance, deps: Dictati
       };
       const asrResult = await deps.asr.transcribe(asrPrompt ? { ...asrInput, prompt: asrPrompt } : asrInput);
       recoverableRawText = asrResult.rawText;
+      if (asrResult.rawText.trim().length === 0) {
+        throw new Error("audio.no_speech_detected");
+      }
 
       const prompt = buildDictationPrompt({
         rawText: asrResult.rawText,
