@@ -364,6 +364,23 @@ select {
   color: #25313b;
 }
 
+.privacy-summary {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(35, 52, 65, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.privacy-summary ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+  color: #52606b;
+}
+
 .error-banner,
 .empty-state {
   padding: 12px 14px;
