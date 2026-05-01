@@ -412,6 +412,7 @@ Server/config errors:
 - `server.refine_failed`
 - `server.provider_timeout`
 - `server.provider_rate_limited`
+- `audio.poor_quality`
 - `server.audio_too_large`
 - `server.unsupported_audio_format`
 - `server.invalid_request`

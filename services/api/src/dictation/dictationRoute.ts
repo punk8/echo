@@ -235,7 +235,7 @@ function statusForError(code: string) {
   ) {
     return 400;
   }
-  if (code === "audio.no_speech_detected") {
+  if (code === "audio.no_speech_detected" || code === "audio.poor_quality") {
     return 422;
   }
   if (code === "server.provider_rate_limited") {
@@ -262,6 +262,9 @@ function messageForCode(code: string) {
   }
   if (code === "audio.no_speech_detected") {
     return "No speech was detected. Try again closer to the microphone.";
+  }
+  if (code === "audio.poor_quality") {
+    return "Audio quality was too poor to transcribe. Move closer to the microphone and try again.";
   }
   if (code === "server.provider_rate_limited") {
     return "Provider rate limit reached. Try again shortly.";

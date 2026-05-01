@@ -7,6 +7,7 @@ export const DictationErrorCodes = [
   "network.unavailable",
   "audio.device_unavailable",
   "audio.no_speech_detected",
+  "audio.poor_quality",
   "insert.failed",
   "config.asr_missing",
   "config.asr_key_missing",

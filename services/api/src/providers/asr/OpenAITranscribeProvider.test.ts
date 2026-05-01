@@ -84,6 +84,30 @@ describe("OpenAITranscribeProvider", () => {
     ).rejects.toThrow("audio.no_speech_detected");
   });
 
+  it("maps low-quality audio provider errors to audio.poor_quality", async () => {
+    const provider = new OpenAITranscribeProvider({
+      apiKey: "secret",
+      baseUrl: "https://api.openai.com/v1",
+      model: "gpt-4o-transcribe",
+      client: {
+        audio: {
+          transcriptions: {
+            create: vi.fn().mockRejectedValue(new Error("Audio quality is too poor to transcribe."))
+          }
+        }
+      }
+    });
+
+    await expect(
+      provider.transcribe({
+        audio: Buffer.from("audio"),
+        filename: "dictation.wav",
+        mimeType: "audio/wav",
+        language: "auto"
+      })
+    ).rejects.toThrow("audio.poor_quality");
+  });
+
   it("maps rate limits and timeouts to specific provider errors", async () => {
     const rateLimited = new OpenAITranscribeProvider({
       apiKey: "secret",

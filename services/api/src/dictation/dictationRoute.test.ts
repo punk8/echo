@@ -295,6 +295,69 @@ describe("POST /v1/dictation/process", () => {
     expect(llmCalled).toBe(false);
   });
 
+  it("returns poor audio quality when ASR cannot understand noisy audio", async () => {
+    let llmCalled = false;
+    const app = buildServer({
+      asr: {
+        transcribe: async () => {
+          throw new Error("audio.poor_quality");
+        }
+      },
+      llm: {
+        complete: async () => {
+          llmCalled = true;
+          throw new Error("server.refine_failed");
+        }
+      }
+    });
+
+    const multipart = multipartBody([
+      { name: "session_id", value: "session-1" },
+      { name: "audio_format", value: "webm" },
+      { name: "duration_ms", value: "1200" },
+      { name: "language", value: "auto" },
+      {
+        name: "context",
+        value: JSON.stringify({
+          app_name: "TextEdit",
+          bundle_id: "com.apple.TextEdit",
+          window_title: "Untitled",
+          writable: true,
+          selection_present: false,
+          nearby_text: ""
+        })
+      },
+      {
+        name: "dictionary",
+        value: JSON.stringify([{ term: "Echo", aliases: [], case_sensitive: true, source: "manual" }])
+      },
+      {
+        name: "preferences",
+        value: JSON.stringify({ style: "balanced", output_language: "follow_input", format_lists: true })
+      },
+      { name: "audio", filename: "dictation.webm", contentType: "audio/webm", value: "audio-bytes" }
+    ]);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/dictation/process",
+      payload: multipart.body,
+      headers: multipart.headers
+    });
+
+    expect(response.statusCode).toBe(422);
+    expect(response.json()).toMatchObject({
+      session_id: "session-1",
+      error: {
+        code: "audio.poor_quality",
+        message: "Audio quality was too poor to transcribe. Move closer to the microphone and try again.",
+        recoverable: true
+      },
+      raw_text: ""
+    });
+    expect(llmCalled).toBe(false);
+  });
+
   it("rejects audio that exceeds the configured request limit before provider calls", async () => {
     let asrCalled = false;
     const app = buildServer({

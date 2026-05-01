@@ -69,7 +69,7 @@ export class OpenAITranscribeProvider implements ASRProvider {
 }
 
 function normalizeTranscriptionError(error: unknown) {
-  if (error instanceof Error && error.message === "audio.no_speech_detected") {
+  if (error instanceof Error && (error.message === "audio.no_speech_detected" || error.message === "audio.poor_quality")) {
     return error;
   }
 
@@ -86,6 +86,13 @@ function normalizeTranscriptionError(error: unknown) {
   if (error instanceof Error && (error.name === "AbortError" || /timeout/i.test(error.message))) {
     return new Error("server.provider_timeout");
   }
+  if (error instanceof Error && isPoorAudioQualityMessage(error.message)) {
+    return new Error("audio.poor_quality");
+  }
 
   return new Error("server.asr_failed");
+}
+
+function isPoorAudioQualityMessage(message: string) {
+  return /audio quality|too noisy|noise|unintelligible|inaudible|could not understand|can't understand|cannot understand/i.test(message);
 }
