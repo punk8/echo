@@ -35,4 +35,29 @@ describe("validateRefinedResult", () => {
     expect(result.risk).toBe("medium");
     expect(result.warnings).toContain("dictionary_term_missing:Echo");
   });
+
+  it("raises risk when numbers disappear from the refined text", () => {
+    const result = validateRefinedResult({
+      rawText: "send invoice 12345 tomorrow",
+      llmContent:
+        "{\"refined_text\":\"Send the invoice tomorrow.\",\"language\":\"en\",\"edits\":[],\"risk\":\"low\",\"warnings\":[]}",
+      dictionaryTerms: []
+    });
+
+    expect(result.risk).toBe("medium");
+    expect(result.warnings).toContain("critical_token_missing:12345");
+  });
+
+  it("raises risk when date words disappear from the refined text", () => {
+    const result = validateRefinedResult({
+      rawText: "schedule it for January 12",
+      llmContent:
+        "{\"refined_text\":\"Schedule it soon.\",\"language\":\"en\",\"edits\":[],\"risk\":\"low\",\"warnings\":[]}",
+      dictionaryTerms: []
+    });
+
+    expect(result.risk).toBe("medium");
+    expect(result.warnings).toContain("critical_token_missing:January");
+    expect(result.warnings).toContain("critical_token_missing:12");
+  });
 });

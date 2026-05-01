@@ -52,6 +52,15 @@ export function validateRefinedResult(input: ValidateRefinedResultInput): Valida
     }
   }
 
+  for (const token of extractCriticalTokens(input.rawText)) {
+    if (!containsToken(parsed.data.refined_text, token)) {
+      warnings.push(`critical_token_missing:${token}`);
+      if (risk === "low") {
+        risk = "medium";
+      }
+    }
+  }
+
   return {
     refinedText: parsed.data.refined_text,
     language: parsed.data.language,
@@ -59,4 +68,20 @@ export function validateRefinedResult(input: ValidateRefinedResultInput): Valida
     risk,
     warnings
   };
+}
+
+const dateWordPattern =
+  /\b(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|January|February|March|April|May|June|July|August|September|October|November|December)\b/g;
+const numberPattern = /\b\d[\d.,:\/-]*\b/g;
+
+function extractCriticalTokens(rawText: string) {
+  return unique([...(rawText.match(numberPattern) ?? []), ...(rawText.match(dateWordPattern) ?? [])]);
+}
+
+function containsToken(text: string, token: string) {
+  return text.toLowerCase().includes(token.toLowerCase());
+}
+
+function unique(values: string[]) {
+  return [...new Set(values)];
 }
