@@ -10,7 +10,7 @@ import { getUserDataPath } from "./appPaths";
 import { registerIpcHandlers } from "./ipc";
 import { applyAppBehaviorSettings } from "./platform/appBehavior";
 import { captureContext } from "./platform/context";
-import { copyTextToClipboard, pasteTextWithClipboardFallback } from "./platform/insertion";
+import { copyTextToClipboard, insertTextWithAccessibilityFallback } from "./platform/insertion";
 import {
   getPermissionStatus,
   requestAccessibilityPermission,
@@ -72,7 +72,7 @@ if (!gotLock) {
       captureContext,
       recorder,
       backend: (input) => processDictation({ ...input, apiBaseUrl: runtime.apiBaseUrl }),
-      insertText: pasteTextWithClipboardFallback,
+      insertText: insertTextWithAccessibilityFallback,
       copyText: copyTextToClipboard,
       deleteLocalRecording: (localPath) => rm(localPath, { force: true }),
       overlay: {
@@ -130,7 +130,7 @@ if (!gotLock) {
       repositories: { history, settings, dictionary },
       platform: {
         captureContext,
-        insertText: pasteTextWithClipboardFallback,
+        insertText: insertTextWithAccessibilityFallback,
         getPermissionStatus,
         requestMicrophonePermission,
         requestAccessibilityPermission,

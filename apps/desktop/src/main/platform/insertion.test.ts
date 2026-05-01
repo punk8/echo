@@ -1,5 +1,34 @@
 import { describe, expect, it, vi } from "vitest";
-import { copyTextToClipboard, pasteTextWithClipboardFallback } from "./insertion";
+import { copyTextToClipboard, insertTextWithAccessibilityFallback, pasteTextWithClipboardFallback } from "./insertion";
+
+describe("insertTextWithAccessibilityFallback", () => {
+  it("uses direct Accessibility insertion before clipboard transport", async () => {
+    const directInsert = vi.fn().mockResolvedValue(undefined);
+    const clipboard = { readText: vi.fn(() => "before"), writeText: vi.fn() };
+    const runPaste = vi.fn();
+
+    const result = await insertTextWithAccessibilityFallback("hello", { clipboard, directInsert, runPaste });
+
+    expect(directInsert).toHaveBeenCalledWith("hello");
+    expect(clipboard.writeText).not.toHaveBeenCalled();
+    expect(runPaste).not.toHaveBeenCalled();
+    expect(result).toEqual({ method: "accessibility", status: "inserted" });
+  });
+
+  it("falls back to clipboard paste when direct Accessibility insertion fails", async () => {
+    const directInsert = vi.fn().mockRejectedValue(new Error("ax failed"));
+    const clipboard = { readText: vi.fn(() => "before"), writeText: vi.fn() };
+    const runPaste = vi.fn().mockResolvedValue(undefined);
+    const sleep = vi.fn().mockResolvedValue(undefined);
+
+    const result = await insertTextWithAccessibilityFallback("hello", { clipboard, directInsert, runPaste, sleep });
+
+    expect(directInsert).toHaveBeenCalledWith("hello");
+    expect(clipboard.writeText).toHaveBeenNthCalledWith(1, "hello");
+    expect(clipboard.writeText).toHaveBeenNthCalledWith(2, "before");
+    expect(result).toEqual({ method: "clipboard_paste", status: "inserted" });
+  });
+});
 
 describe("pasteTextWithClipboardFallback", () => {
   it("restores the previous clipboard text after a successful paste", async () => {

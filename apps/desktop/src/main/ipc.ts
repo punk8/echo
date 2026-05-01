@@ -1,7 +1,7 @@
 import { ipcMain, type BrowserWindow } from "electron";
 import type { DictationState } from "@echo/shared";
 import type { captureContext } from "./platform/context";
-import type { pasteTextWithClipboardFallback } from "./platform/insertion";
+import type { InsertionResult } from "./platform/insertion";
 import type {
   getPermissionStatus,
   requestAccessibilityPermission,
@@ -32,7 +32,7 @@ export interface RegisterIpcHandlersDeps {
   };
   platform: {
     captureContext: typeof captureContext;
-    insertText: typeof pasteTextWithClipboardFallback;
+    insertText: (text: string) => Promise<InsertionResult>;
     getPermissionStatus: typeof getPermissionStatus;
     requestMicrophonePermission: typeof requestMicrophonePermission;
     requestAccessibilityPermission: typeof requestAccessibilityPermission;
