@@ -21,4 +21,13 @@ describe("findDotenvPath", () => {
 
     expect(findDotenvPath(path.join(root, "services", "api"), explicit)).toBe(explicit);
   });
+
+  it("does not walk out of a packaged app resource directory", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "echo-env-"));
+    const appApiDir = path.join(root, "release", "mac-arm64", "Echo.app", "Contents", "Resources", "api");
+    mkdirSync(appApiDir, { recursive: true });
+    writeFileSync(path.join(root, ".env"), "LLM_MODEL=gpt-4o-mini\n");
+
+    expect(findDotenvPath(appApiDir)).toBeUndefined();
+  });
 });

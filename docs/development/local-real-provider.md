@@ -71,4 +71,10 @@ pnpm package:mac
 
 The packaging command builds the Electron app, bundles the local API into `services/api/bundle/index.mjs`, and copies that bundle into `Echo.app/Contents/Resources/api/index.mjs`. The output is written to `release/mac-arm64/Echo.app`. Packaged API startup uses Echo's own Electron executable in Node mode, so users do not need a separate Node.js installation.
 
+Packaged API dotenv discovery is intentionally limited to `Echo.app/Contents/Resources` and below. It will not walk out of the app bundle to read a repository-level `.env`. For local packaged smoke tests, launch with an explicit env file:
+
+```bash
+ECHO_ENV_FILE="$PWD/.env" release/mac-arm64/Echo.app/Contents/MacOS/Echo
+```
+
 This local package is intentionally unsigned (`identity: null`) for development. Distribution builds still need a Developer ID signing and notarization workflow.

@@ -17,11 +17,36 @@ export function findDotenvPath(startDirectory: string, explicitPath?: string) {
   }
 
   let current = path.resolve(startDirectory);
+  const packagedResourceRoot = findPackagedResourceRoot(current);
 
   while (true) {
     const candidate = path.join(current, ".env");
     if (existsSync(candidate)) {
       return candidate;
+    }
+
+    if (packagedResourceRoot && current === packagedResourceRoot) {
+      return undefined;
+    }
+
+    const parent = path.dirname(current);
+    if (parent === current) {
+      return undefined;
+    }
+    current = parent;
+  }
+}
+
+function findPackagedResourceRoot(startDirectory: string) {
+  let current = path.resolve(startDirectory);
+
+  while (true) {
+    if (
+      path.basename(current) === "Resources" &&
+      path.basename(path.dirname(current)) === "Contents" &&
+      path.basename(path.dirname(path.dirname(current))).endsWith(".app")
+    ) {
+      return current;
     }
 
     const parent = path.dirname(current);

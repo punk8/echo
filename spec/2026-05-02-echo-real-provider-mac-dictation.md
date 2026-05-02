@@ -179,6 +179,7 @@ For local desktop use, the Electron main process should manage that local API se
 - The desktop app checks `/health` before starting a child process, so an already-running local API on the configured host/port is reused.
 - The desktop app should start the compiled API entry when build output exists, and fall back to the TypeScript development entry only when no compiled entry is available.
 - Packaged macOS builds should carry a bundled API entry under app resources and prefer that packaged resource before workspace development paths. The packaged resource must be launched through the app's own Electron executable in Node mode, not through a user-installed `node` binary.
+- Packaged API dotenv discovery must not walk outside `Echo.app/Contents/Resources`. External provider config for packaged development builds must come from inherited environment variables or an explicit `ECHO_ENV_FILE` path.
 - The child process is terminated when the desktop app exits.
 - Startup failures must be surfaced as provider status/config errors without exposing secrets in the UI or logs.
 
