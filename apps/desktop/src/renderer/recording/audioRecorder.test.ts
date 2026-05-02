@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { chooseAudioMimeType, createAudioRecorder } from "./audioRecorder";
 
 class FakeMediaRecorder {
-  static supported = true;
-  static isTypeSupported = vi.fn((mimeType: string) => FakeMediaRecorder.supported && mimeType === "audio/webm");
+  static supportedMimeTypes = new Set(["audio/webm"]);
+  static isTypeSupported = vi.fn((mimeType: string) => FakeMediaRecorder.supportedMimeTypes.has(mimeType));
 
   ondataavailable: ((event: { data: Blob }) => void) | null = null;
   onstop: (() => void) | null = null;
@@ -25,7 +25,7 @@ class FakeMediaRecorder {
 
 describe("chooseAudioMimeType", () => {
   it("chooses audio/webm when MediaRecorder supports it", () => {
-    FakeMediaRecorder.supported = true;
+    FakeMediaRecorder.supportedMimeTypes = new Set(["audio/webm"]);
 
     expect(chooseAudioMimeType(FakeMediaRecorder as unknown as typeof MediaRecorder)).toEqual({
       audioFormat: "webm",
@@ -33,19 +33,27 @@ describe("chooseAudioMimeType", () => {
     });
   });
 
-  it("falls back to wav when webm is unavailable", () => {
-    FakeMediaRecorder.supported = false;
+  it("falls back to wav only when wav is supported", () => {
+    FakeMediaRecorder.supportedMimeTypes = new Set(["audio/wav"]);
 
     expect(chooseAudioMimeType(FakeMediaRecorder as unknown as typeof MediaRecorder)).toEqual({
       audioFormat: "wav",
       mimeType: "audio/wav"
     });
   });
+
+  it("fails when neither supported backend audio format is available", () => {
+    FakeMediaRecorder.supportedMimeTypes = new Set();
+
+    expect(() => chooseAudioMimeType(FakeMediaRecorder as unknown as typeof MediaRecorder)).toThrow(
+      "audio.device_unavailable"
+    );
+  });
 });
 
 describe("createAudioRecorder", () => {
   it("returns recorded blob, duration, and level samples after stop", async () => {
-    FakeMediaRecorder.supported = true;
+    FakeMediaRecorder.supportedMimeTypes = new Set(["audio/webm"]);
     const levels: number[] = [];
     const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
     const recorder = createAudioRecorder({

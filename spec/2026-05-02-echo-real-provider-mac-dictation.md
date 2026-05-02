@@ -71,7 +71,8 @@ Runtime behavior:
 Audio format:
 
 - The client records `webm` when Electron's media stack supports it on the target macOS version.
-- If `webm` recording is unavailable, the client records `wav`.
+- If `webm` recording is unavailable and `wav` recording is explicitly supported, the client records `wav`.
+- If neither backend-supported audio format is available, recording fails with `audio.device_unavailable` instead of sending mislabeled audio.
 - The backend accepts both `webm` and `wav` and forwards the actual file format to the OpenAI transcription endpoint.
 - The request field `audio_format` must always match the uploaded file.
 

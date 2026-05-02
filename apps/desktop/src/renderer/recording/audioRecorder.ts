@@ -25,7 +25,10 @@ export function chooseAudioMimeType(MediaRecorderCtor: typeof MediaRecorder = Me
   if (MediaRecorderCtor.isTypeSupported("audio/webm")) {
     return { audioFormat: "webm" as const, mimeType: "audio/webm" };
   }
-  return { audioFormat: "wav" as const, mimeType: "audio/wav" };
+  if (MediaRecorderCtor.isTypeSupported("audio/wav")) {
+    return { audioFormat: "wav" as const, mimeType: "audio/wav" };
+  }
+  throw new Error("audio.device_unavailable");
 }
 
 export function createAudioRecorder(deps: AudioRecorderDeps = {}): AudioRecorder {
