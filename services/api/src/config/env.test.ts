@@ -59,6 +59,18 @@ describe("loadApiEnv", () => {
     expect(env.llm.apiKey).toBe("shared-secret");
   });
 
+  it("ignores .env.example secret placeholders when shared API_KEY is set", () => {
+    const env = loadApiEnv({
+      API_KEY: "shared-secret",
+      ASR_API_KEY: "replace-with-local-secret",
+      LLM_API_KEY: "replace-with-local-secret",
+      LLM_MODEL: "gpt-4o"
+    });
+
+    expect(env.asr.apiKey).toBe("shared-secret");
+    expect(env.llm.apiKey).toBe("shared-secret");
+  });
+
   it("defaults blank local placeholders for OpenAI-compatible development", () => {
     const env = loadApiEnv({
       API_KEY: "shared-secret",
@@ -85,7 +97,7 @@ describe("loadApiEnv", () => {
         ASR_MODEL: "",
         ASR_BASE_URL: "默认",
         LLM_PROVIDER: "",
-        LLM_MODEL: "",
+        LLM_MODEL: "replace-with-model-id",
         LLM_BASE_URL: "默认"
       })
     ).toThrow("config.llm_model_missing");

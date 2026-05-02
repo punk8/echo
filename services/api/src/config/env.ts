@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const defaultOpenAIBaseUrl = "https://api.openai.com/v1";
+const blankPlaceholders = new Set(["默认", "default", "replace-with-local-secret", "replace-with-model-id"]);
 
 const EnvSchema = z.object({
   API_HOST: z.string().default("127.0.0.1"),
@@ -77,7 +78,7 @@ function normalizeBlank(value: unknown) {
   }
 
   const trimmed = value.trim();
-  if (!trimmed || trimmed === "默认" || trimmed.toLowerCase() === "default") {
+  if (!trimmed || blankPlaceholders.has(trimmed) || blankPlaceholders.has(trimmed.toLowerCase())) {
     return undefined;
   }
 
