@@ -217,10 +217,11 @@ export function App() {
     try {
       setError(null);
       const currentState = snapshotRef.current.state;
-      const next =
-        currentState.status === "recording" || currentState.status === "finalizing"
-          ? await desktopApi.stopDictation()
-          : await desktopApi.startDictation();
+      const action = getDictationToggleAction(currentState);
+      if (action === "ignore") {
+        return;
+      }
+      const next = action === "stop" ? await desktopApi.stopDictation() : await desktopApi.startDictation();
       setSnapshot(next);
       await refresh();
     } catch (caught) {
@@ -327,6 +328,16 @@ export function App() {
 
 export function isOverlayRouteHash(hash: string) {
   return hash === "#overlay" || hash === "#/overlay";
+}
+
+export function getDictationToggleAction(state: DictationState): "start" | "stop" | "ignore" {
+  if (state.status === "recording") {
+    return "stop";
+  }
+  if (state.status === "finalizing" || state.status === "processing" || state.status === "inserting") {
+    return "ignore";
+  }
+  return "start";
 }
 
 export async function saveSettingsAndRefreshHistory(input: {

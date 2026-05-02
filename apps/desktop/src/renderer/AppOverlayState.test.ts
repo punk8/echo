@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildOverlayState, cancelDictationAndRefreshHistory, isOverlayRouteHash, saveSettingsAndRefreshHistory } from "./App";
+import {
+  buildOverlayState,
+  cancelDictationAndRefreshHistory,
+  getDictationToggleAction,
+  isOverlayRouteHash,
+  saveSettingsAndRefreshHistory
+} from "./App";
 
 describe("buildOverlayState", () => {
   it("recognizes packaged overlay window hashes", () => {
@@ -226,6 +232,16 @@ describe("buildOverlayState", () => {
       status: "processing",
       stageText: "Transcribing audio and refining text"
     });
+  });
+});
+
+describe("getDictationToggleAction", () => {
+  it("only stops active recording and ignores busy non-recording states", () => {
+    expect(getDictationToggleAction({ status: "idle" })).toBe("start");
+    expect(getDictationToggleAction({ status: "recording", sessionId: "session-1" })).toBe("stop");
+    expect(getDictationToggleAction({ status: "finalizing", sessionId: "session-1" })).toBe("ignore");
+    expect(getDictationToggleAction({ status: "processing", sessionId: "session-1" })).toBe("ignore");
+    expect(getDictationToggleAction({ status: "inserting", sessionId: "session-1" })).toBe("ignore");
   });
 });
 
